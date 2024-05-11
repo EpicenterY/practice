@@ -1,46 +1,57 @@
 const jscad = require('@jscad/modeling')
 const { cuboid, circle, ellipsoid , rectangle } = jscad.primitives
 const { subtract, union } = jscad.booleans
-const { colorize, hexToRgb } = jscad.colors
-const { extrudeFromSlices, extrudeLinear, slice } = jscad.extrusions
+const { colorize } = jscad.colors
+const { extrudeLinear} = jscad.extrusions
 const { geom2 } = jscad.geometries
 const { hullChain } = jscad.hulls
 const { mat4 } = jscad.maths
-const { measureBoundingBox } = jscad.measurements
 const { vectorText } = jscad.text
 const { translate, scale, rotateY, rotateZ, center } = jscad.transforms
 
 const options = { segments: 32 }
 
-
-
-
-
 const getParameterDefinitions = () => [
-  { name: 'size', type: 'group', caption: '목재크기'},
-  { name: 'width', type: 'int', initial: 300, caption: 'Width:' },
-  { name: 'depth', type: 'int', initial: 300, caption: 'Depth:' },
-  {
-    name: 'thickness',
-    type: 'choice',
-    caption: 'Thickness:',
+  //-------------------------------------------------------//
+  //목재 선택
+  //-------------------------------------------------------//
+  { name: 'woodSelection', type: 'group', caption: '목재 선택'},
+  { name: 'type', type: 'choice', caption: '목재 종류 :',
+    values: [1, 2, 3, 4, 5],
+    captions: ['미송집성목', '삼나무집성목', '멀바우집성목', '아카시아집성목', '스프러스집성목'],
+    initial: '1'
+  },
+  { name: 'thickness', type: 'choice', caption: '목재 두께 :',
     values: [4.5, 15, 18, 24, 30],
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
     initial: '15'
   },
-  //그룹하나 끝
+  { name: 'width', type: 'int', initial: 300, caption: '길이(결방향) :' },
+  { name: 'depth', type: 'int', initial: 300, caption: '폭 :' },
+  { name: 'quantity', type: 'int', caption: '주문수량 :',
+    values: [4.5, 15, 18, 24, 30],
+    captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
+    initial: '15'
+  },
+  //-------------------------------------------------------//
+  //후가공 선택
+  //-------------------------------------------------------//
+  //원형타공 (Circle-cut)
   { name: 'circleCut', type: 'group', caption: '원형타공'},
   { name: 'circleCutEnabled', type: 'checkbox', caption: '원형타공적용', checked: false },
-  { name: 'holeX', type: 'int', initial: 0, caption: 'Hole X Position:' },
-  { name: 'holeY', type: 'int', initial: 50, caption: 'Hole Y Position:' },
-  { name: 'holeDiameter', type: 'int', initial: 45, caption: 'Hole Diameter:' },
-  //그룹하나 끝
+  { name: 'circleCutPosX', type: 'int', initial: 0, caption: 'Hole X Position:' },
+  { name: 'circleCutPosY', type: 'int', initial: 0, caption: 'Hole Y Position:' },
+  { name: 'holeDiameter', type: 'int', initial: 50, caption: 'Hole Diameter:' },
+  //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEnabled', type: 'checkbox', caption: '사각타공적용', checked: false },
-  { name: 'rectX', type: 'int', initial: 75, caption: 'Rect X Position:' },
-  { name: 'rectY', type: 'int', initial: 50, caption: 'Rect Y Position:' },
+  { name: 'squareCutPosX', type: 'int', initial: 75, caption: 'Rect X Position:' },
+  { name: 'squareCutPosY', type: 'int', initial: 50, caption: 'Rect Y Position:' },
   { name: 'rectWidth', type: 'int', initial: 45, caption: 'Rect Width:' },
   { name: 'rectDepth', type: 'int', initial: 45, caption: 'Rect Depth:' },
+
+
+  
   //그룹하나 끝
   { name: 'slot', type: 'group', caption: '두께홈파기'},
   { name: 'slotCutEnabled',type:'checkbox',caption:'두께홈파기적용', checked: false },
@@ -99,8 +110,8 @@ const createSizeText = (width, depth, thickness) => {
   return sizeText3D
 }
 
-const createCircleCut = (width, depth, thickness, holeX, holeY, holeDiameter) => {
-  const hole = circle({ radius: holeDiameter / 2, center: [holeX, holeY], segments: options.segments })
+const createCircleCut = (width, depth, thickness, circleCutPosX, circleCutPosY, holeDiameter) => {
+  const hole = circle({ radius: holeDiameter / 2, center: [circleCutPosX, circleCutPosY], segments: options.segments })
   const hole3D = extrudeLinear({ height: thickness*2 }, hole)
   return hole3D
 }
@@ -137,12 +148,12 @@ const createChamferCut = (width, depth, thickness, chamferOption, chamferSize) =
     return chamferBoxs;
 }
 
-const createSquareCut = (width, depth, thickness, rectX, rectY, rectWidth, rectDepth) => {
+const createSquareCut = (width, depth, thickness, squareCutPosX, squareCutPosY, rectWidth, rectDepth) => {
   // 사각형 생성
   const rect = rectangle({ size: [rectWidth, rectDepth] });
   const rect3D = extrudeLinear({ height: thickness + 10 }, rect);  // 박스를 완전히 관통하기 위해 두께보다 더 높게 설정
   // 사각형 위치 조정
-  return translate([rectX - rectWidth / 2, rectY - rectDepth / 2, -5], rect3D);
+  return translate([squareCutPosX - rectWidth / 2, squareCutPosY - rectDepth / 2, -5], rect3D);
 }
 
 const createCornerHoles = (width, depth, thickness) => {
@@ -172,8 +183,8 @@ const createSquareSideCut = (width, depth, thickness) => {
 
 const main = ({
   width, depth, thickness,
-  holeX, holeY, holeDiameter, circleCutEnabled,
-  rectX, rectY, rectWidth, rectDepth, squareCutEnabled,
+  circleCutPosX, circleCutPosY, holeDiameter, circleCutEnabled,
+  squareCutPosX, squareCutPosY, rectWidth, rectDepth, squareCutEnabled,
   cornerHolesEnabled, slotCutEnabled, boringEnabled, sholeX,
   roundRadius, roundedCorners,
   chamferEnabled, chamferSize, chamferOption
@@ -182,12 +193,12 @@ const main = ({
   let modifiedBox = box;
 
   if (circleCutEnabled) {
-    const holeCut = createCircleCut(width, depth, thickness, holeX, holeY, holeDiameter);
+    const holeCut = createCircleCut(width, depth, thickness, circleCutPosX, circleCutPosY, holeDiameter);
     modifiedBox = subtract(modifiedBox, holeCut);
   }
 
   if (squareCutEnabled) {
-    const squareCut = createSquareCut(width, depth, thickness, rectX, rectY, rectWidth, rectDepth);
+    const squareCut = createSquareCut(width, depth, thickness, squareCutPosX, squareCutPosY, rectWidth, rectDepth);
     modifiedBox = subtract(modifiedBox, squareCut);
     
   }
