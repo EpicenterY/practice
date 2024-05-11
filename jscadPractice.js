@@ -1,5 +1,5 @@
 const jscad = require('@jscad/modeling')
-const { cuboid, circle, ellipsoid , rectangle } = jscad.primitives
+const { cuboid, cylinder, circle, ellipsoid , rectangle } = jscad.primitives
 const { subtract, union } = jscad.booleans
 const { colorize } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
@@ -39,9 +39,12 @@ const getParameterDefinitions = () => [
   //원형타공 (Circle-cut)
   { name: 'circleCut', type: 'group', caption: '원형타공'},
   { name: 'circleCutEnabled', type: 'checkbox', caption: '원형타공적용', checked: false },
+  { name: 'originEnabled', type: 'checkbox', caption: '원점 표시', checked: false },
   { name: 'circleCutPosX', type: 'int', initial: 0, caption: 'Hole X Position:' },
   { name: 'circleCutPosY', type: 'int', initial: 0, caption: 'Hole Y Position:' },
-  { name: 'holeDiameter', type: 'int', initial: 50, caption: 'Hole Diameter:' },
+  { name: 'circleCutDiameter', type: 'int', initial: 50, caption: 'Hole Diameter:' },
+
+
   //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEnabled', type: 'checkbox', caption: '사각타공적용', checked: false },
@@ -49,9 +52,6 @@ const getParameterDefinitions = () => [
   { name: 'squareCutPosY', type: 'int', initial: 50, caption: 'Rect Y Position:' },
   { name: 'rectWidth', type: 'int', initial: 45, caption: 'Rect Width:' },
   { name: 'rectDepth', type: 'int', initial: 45, caption: 'Rect Depth:' },
-
-
-  
   //그룹하나 끝
   { name: 'slot', type: 'group', caption: '두께홈파기'},
   { name: 'slotCutEnabled',type:'checkbox',caption:'두께홈파기적용', checked: false },
@@ -78,6 +78,18 @@ const createBox = (width, depth, thickness) => {
   const box = cuboid({ size: [width, depth, thickness] })
   // 박스를 Z축 방향으로 두께의 절반만큼 이동시켜, 박스의 바닥면이 Z=0에 위치하도록 함
   return translate([0, 0, thickness / 2], box)
+}
+
+// function createBox(width, depth, thickness) {
+//   return translate([0, 0, thickness / 2], box);
+// }
+
+const createOrigin = (width, depth, thickness) => {
+  const origin = cylinder({radius : 2, height : 4})
+  const leftLowOrigin = translate([-width/2, -depth/2, thickness+2],origin)
+
+  return leftLowOrigin
+
 }
 
 // Build text by creating the font strokes (2D), then extruding up (3D).
@@ -110,8 +122,8 @@ const createSizeText = (width, depth, thickness) => {
   return sizeText3D
 }
 
-const createCircleCut = (width, depth, thickness, circleCutPosX, circleCutPosY, holeDiameter) => {
-  const hole = circle({ radius: holeDiameter / 2, center: [circleCutPosX, circleCutPosY], segments: options.segments })
+const createCircleCut = (width, depth, thickness, circleCutPosX, circleCutPosY, circleCutDiameter) => {
+  const hole = circle({ radius: circleCutDiameter / 2, center: [circleCutPosX, circleCutPosY], segments: options.segments })
   const hole3D = extrudeLinear({ height: thickness*2 }, hole)
   return hole3D
 }
@@ -183,17 +195,17 @@ const createSquareSideCut = (width, depth, thickness) => {
 
 const main = ({
   width, depth, thickness,
-  circleCutPosX, circleCutPosY, holeDiameter, circleCutEnabled,
+  circleCutPosX, circleCutPosY, circleCutDiameter, circleCutEnabled,
   squareCutPosX, squareCutPosY, rectWidth, rectDepth, squareCutEnabled,
   cornerHolesEnabled, slotCutEnabled, boringEnabled, sholeX,
-  roundRadius, roundedCorners,
+  roundRadius, roundedCorners, originEnabled, 
   chamferEnabled, chamferSize, chamferOption
 }) => {
   const box = createBox(width, depth, thickness);
   let modifiedBox = box;
 
   if (circleCutEnabled) {
-    const holeCut = createCircleCut(width, depth, thickness, circleCutPosX, circleCutPosY, holeDiameter);
+    const holeCut = createCircleCut(width, depth, thickness, circleCutPosX, circleCutPosY, circleCutDiameter);
     modifiedBox = subtract(modifiedBox, holeCut);
   }
 
@@ -228,14 +240,34 @@ const main = ({
     modifiedBox = subtract(modifiedBox, chamferCut);
   }
 
+  // if (originEnabled) {
+    
+    // modifiedBox = union(modifiedBox, originM);
+  // }
+
 
   const sizeText3D = createSizeText(width, depth, thickness);
   const positionedText = translate([0, 0, thickness], sizeText3D);
+  const originM = createOrigin(width, depth, thickness);
 
-  return [
-    colorize([0.5, 1, 1], modifiedBox),
-    colorize([0, 0, 0], positionedText)
-  ];
+  // return [
+  //   colorize([0.5, 1, 1], modifiedBox),
+  //   colorize([0, 0, 0], positionedText),
+  //   colorize([1,0,0],originM)
+  // ];
+
+  if (originEnabled) {
+    return [
+      colorize([0.5, 1, 1], modifiedBox),
+      colorize([0, 0, 0], positionedText),
+      colorize([1,0,0],originM)
+    ];
+  } else {
+    return [
+      colorize([0.5, 1, 1], modifiedBox),
+      colorize([0, 0, 0], positionedText)
+    ];
+  }
 }
 
 
