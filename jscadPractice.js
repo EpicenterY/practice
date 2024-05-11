@@ -13,6 +13,8 @@ const { translate, scale, rotateY, rotateZ, center } = jscad.transforms
 const options = { segments: 32 }
 
 
+
+
 const getParameterDefinitions = () => [
   { name: 'size', type: 'group', caption: '목재크기'},
   { name: 'width', type: 'int', initial: 300, caption: 'Width:' },
