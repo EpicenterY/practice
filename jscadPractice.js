@@ -43,8 +43,6 @@ const getParameterDefinitions = () => [
   { name: 'circleCutPosX', type: 'int', initial: 0, caption: 'Hole X Position:' },
   { name: 'circleCutPosY', type: 'int', initial: 0, caption: 'Hole Y Position:' },
   { name: 'circleCutDiameter', type: 'int', initial: 50, caption: 'Hole Diameter:' },
-
-
   //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEnabled', type: 'checkbox', caption: '사각타공적용', checked: false },
@@ -128,6 +126,20 @@ const createCircleCut = (width, depth, thickness, circleCutPosX, circleCutPosY, 
   return hole3D
 }
 
+const createCircleCutMulti = (width, depth, thickness, circleCutArray) => {
+  
+  const hole3DMulti = [];
+
+  // parameter가 배열로 넘어왔을때
+  circleCutArray.forEach((el) => {
+    let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutPosX, el.circleCutPosY], segments: options.segments });
+    let hole3D = extrudeLinear({ height: thickness*2 }, hole);
+    hole3DMulti.push(hole3D);
+  });
+
+  return hole3DMulti;
+}
+
 const createBoringCut = (width, depth, thickness, sholeX) => {
   const hole = circle({ radius: 35/2, center: [-width/2 + sholeX, 0], segments: options.segments })
   const hole3D = extrudeLinear({ height: 50 }, hole)
@@ -199,7 +211,7 @@ const main = ({
   squareCutPosX, squareCutPosY, rectWidth, rectDepth, squareCutEnabled,
   cornerHolesEnabled, slotCutEnabled, boringEnabled, sholeX,
   roundRadius, roundedCorners, originEnabled, 
-  chamferEnabled, chamferSize, chamferOption
+  chamferEnabled, chamferSize, chamferOption, circleCutArray
 }) => {
   const box = createBox(width, depth, thickness);
   let modifiedBox = box;
@@ -207,6 +219,20 @@ const main = ({
   if (circleCutEnabled) {
     const holeCut = createCircleCut(width, depth, thickness, circleCutPosX, circleCutPosY, circleCutDiameter);
     modifiedBox = subtract(modifiedBox, holeCut);
+  }
+
+  // 원형타공 multi 옵션
+  if (circleCutEnabled) {
+
+    // parameter 배열이면서 요소가 1개 이상 체크
+    if (Array.isArray(circleCutArray) && circleCutArray.length > 0) {
+      const holeCutMulti = createCircleCutMulti(width, depth, thickness, circleCutArray);
+  
+      holeCutMulti.forEach((holeCut) => {
+        modifiedBox = subtract(modifiedBox, holeCut);
+      });
+    }
+
   }
 
   if (squareCutEnabled) {
@@ -240,36 +266,20 @@ const main = ({
     modifiedBox = subtract(modifiedBox, chamferCut);
   }
 
-  // if (originEnabled) {
-    
-    // modifiedBox = union(modifiedBox, originM);
-  // }
-
-
   const sizeText3D = createSizeText(width, depth, thickness);
   const positionedText = translate([0, 0, thickness], sizeText3D);
   const originM = createOrigin(width, depth, thickness);
 
-  // return [
-  //   colorize([0.5, 1, 1], modifiedBox),
-  //   colorize([0, 0, 0], positionedText),
-  //   colorize([1,0,0],originM)
-  // ];
+  const woodScene = [];
+
+  woodScene.push(colorize([0.5, 1, 1], modifiedBox));
+  woodScene.push(colorize([0, 0, 0], positionedText));
 
   if (originEnabled) {
-    return [
-      colorize([0.5, 1, 1], modifiedBox),
-      colorize([0, 0, 0], positionedText),
-      colorize([1,0,0],originM)
-    ];
-  } else {
-    return [
-      colorize([0.5, 1, 1], modifiedBox),
-      colorize([0, 0, 0], positionedText)
-    ];
+    woodScene.push(colorize([1,0,0],originM))
   }
+
+  return woodScene;
 }
-
-
 
 module.exports = { main, getParameterDefinitions }
