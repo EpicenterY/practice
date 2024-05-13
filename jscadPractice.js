@@ -71,7 +71,7 @@ const getParameterDefinitions = () => [
   { name: 'conuterSink', type: 'group', caption: '피스타공'},
   { name: 'cornerHolesEnabled', type:'checkbox', caption:'피스타공적용', checked: false}
 ]
-
+//
 const createBox = (width, depth, thickness) => {
   const box = cuboid({ size: [width, depth, thickness] })
   // 박스를 Z축 방향으로 두께의 절반만큼 이동시켜, 박스의 바닥면이 Z=0에 위치하도록 함
