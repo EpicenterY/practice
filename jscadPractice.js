@@ -12,9 +12,7 @@ const { translate, scale, rotateY, rotateZ, center } = jscad.transforms
 const options = { segments: 32 }
 
 const getParameterDefinitions = () => [
-  //-------------------------------------------------------//
   //목재 선택
-  //-------------------------------------------------------//
   { name: 'woodSelection', type: 'group', caption: '목재 선택'},
   { name: 'type', type: 'choice', caption: '목재 종류 :',
     values: [1, 2, 3, 4, 5],
@@ -33,13 +31,17 @@ const getParameterDefinitions = () => [
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
     initial: '15'
   },
-  //-------------------------------------------------------//
+  { name: 'originEnabled', type: 'checkbox', caption: '원점 표시', checked: false },
+
   //후가공 선택
-  //-------------------------------------------------------//
+  //밑단홈파기
+  { name: 'bottomGrooving', type: 'group', caption: '밑단홈파기'},
+  { name: 'bottomGroovingEnabled', type: 'checkbox', caption: '밑단홈파기적용', checked: false },
+  { name: 'bottomGroovingWidth', type: 'int', initial: 10, caption: '폭 :' },
+  { name: 'bottomGroovingDepth', type: 'int', initial: 5, caption: '깊이 :' },
   //원형타공 (Circle-cut)
   { name: 'circleCut', type: 'group', caption: '원형타공'},
   { name: 'circleCutEnabled', type: 'checkbox', caption: '원형타공적용', checked: false },
-  { name: 'originEnabled', type: 'checkbox', caption: '원점 표시', checked: false },
   { name: 'circleCutPosX', type: 'int', initial: 0, caption: 'Hole X Position:' },
   { name: 'circleCutPosY', type: 'int', initial: 0, caption: 'Hole Y Position:' },
   { name: 'circleCutDiameter', type: 'int', initial: 50, caption: 'Hole Diameter:' },
@@ -71,27 +73,12 @@ const getParameterDefinitions = () => [
   { name: 'conuterSink', type: 'group', caption: '피스타공'},
   { name: 'cornerHolesEnabled', type:'checkbox', caption:'피스타공적용', checked: false}
 ]
-//
-const createBox = (width, depth, thickness) => {
-  const box = cuboid({ size: [width, depth, thickness] })
-  // 박스를 Z축 방향으로 두께의 절반만큼 이동시켜, 박스의 바닥면이 Z=0에 위치하도록 함
-  return translate([0, 0, thickness / 2], box)
+
+const createBase = (width, depth, thickness) => {
+  const base = cuboid({ size: [width, depth, thickness] })
+  return translate([0, 0, thickness / 2], base)
 }
 
-// function createBox(width, depth, thickness) {
-//   return translate([0, 0, thickness / 2], box);
-// }
-
-const createOrigin = (width, depth, thickness) => {
-  const originSphere = colorize([1,0,0],sphere({radius : 1, segment : 32}))
-  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 3, segment : 32}))
-  const leftLowOrigin = translate([-width/2, -depth/2, thickness],[originSphere,originBigSphere])
-
-  return leftLowOrigin
-
-}
-
-// Build text by creating the font strokes (2D), then extruding up (3D).
 const text = (message, extrusionHeight, characterLineWidth) => {
   if (message === undefined || message.length === 0) return []
 
@@ -119,6 +106,20 @@ const createSizeText = (width, depth, thickness) => {
   sizeText3D = scale([0.5, 0.5, 0.5], sizeText3D)
   sizeText3D = translate([0, 0, 0], sizeText3D)
   return sizeText3D
+}
+
+//원점표시
+const createOrigin = (width, depth, thickness) => {
+  const originSphere = colorize([1,0,0],sphere({radius : 1, segment : 32}))
+  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 2, segment : 64}))
+  const origin = translate([-width/2, -depth/2, thickness],[originSphere,originBigSphere])
+  return origin
+}
+
+//밑단홈파기
+const createBottomGrooving = (width, depth, bottomGroovingWidth, bottomGroovingDepth, thickness) => {
+  const bottomGroovingCuboid = cuboid({size:[width, 5, bottomGroovingDepth]})
+  return translate([0, - depth / 2 + bottomGroovingWidth, thickness - bottomGroovingDepth/2],bottomGroovingCuboid)
 }
 
 const createCircleCut = (width, depth, thickness, circleCutPosX, circleCutPosY, circleCutDiameter) => {
@@ -206,22 +207,32 @@ const createSquareSideCut = (width, depth, thickness) => {
   return translate([0, -depth/2 + 5, thickness/4], rect3D);
 }
 
+
+
+
 const main = ({
-  width, depth, thickness,
+  width, depth, thickness, //기본치수
+  originEnabled, //원점
+  bottomGroovingWidth, bottomGroovingDepth, bottomGroovingEnabled, //밑단홈파기
   circleCutPosX, circleCutPosY, circleCutDiameter, circleCutEnabled,
   squareCutPosX, squareCutPosY, rectWidth, rectDepth, squareCutEnabled,
   cornerHolesEnabled, slotCutEnabled, boringEnabled, sholeX,
-  roundRadius, roundedCorners, originEnabled, 
+  roundRadius, roundedCorners, 
   chamferEnabled, chamferSize, chamferOption, circleCutArray
 }) => {
-  const box = createBox(width, depth, thickness);
-  let modifiedBox = box;
+  const base = createBase(width, depth, thickness);
+  let modifiedBase = base;
+
+  if (bottomGroovingEnabled) {
+    const bottomGrooving = createBottomGrooving(width, depth, bottomGroovingWidth, bottomGroovingDepth, thickness);
+    modifiedBase = subtract(modifiedBase, bottomGrooving);
+  }
+
 
   if (circleCutEnabled) {
     const holeCut = createCircleCut(width, depth, thickness, circleCutPosX, circleCutPosY, circleCutDiameter);
-    modifiedBox = subtract(modifiedBox, holeCut);
+    modifiedBase = subtract(modifiedBase, holeCut);
   }
-
   // 원형타공 multi 옵션
   if (circleCutEnabled) {
 
@@ -230,7 +241,7 @@ const main = ({
       const holeCutMulti = createCircleCutMulti(width, depth, thickness, circleCutArray);
   
       holeCutMulti.forEach((holeCut) => {
-        modifiedBox = subtract(modifiedBox, holeCut);
+        modifiedBase = subtract(modifiedBase, holeCut);
       });
     }
 
@@ -238,33 +249,33 @@ const main = ({
 
   if (squareCutEnabled) {
     const squareCut = createSquareCut(width, depth, thickness, squareCutPosX, squareCutPosY, rectWidth, rectDepth);
-    modifiedBox = subtract(modifiedBox, squareCut);
+    modifiedBase = subtract(modifiedBase, squareCut);
     
   }
 
   if (slotCutEnabled) {
     const squareSideCut = createSquareSideCut(width, depth, thickness);
-    modifiedBox = subtract(modifiedBox, squareSideCut);
+    modifiedBase = subtract(modifiedBase, squareSideCut);
   }
 
   if (cornerHolesEnabled) {
     const cornerHoles = createCornerHoles(width, depth, thickness);
-    modifiedBox = cornerHoles.reduce((acc, hole) => subtract(acc, hole), modifiedBox);
+    modifiedBase = cornerHoles.reduce((acc, hole) => subtract(acc, hole), modifiedBase);
   }
 
   if (roundedCorners) {
     const cornerCut = createRoundedCornerCut (width, depth, thickness, roundRadius);
-    modifiedBox = subtract(modifiedBox, cornerCut);
+    modifiedBase = subtract(modifiedBase, cornerCut);
   }
 
   if (boringEnabled) {
     const boringCut = createBoringCut(width, depth, thickness, sholeX);
-    modifiedBox = subtract(modifiedBox, boringCut);
+    modifiedBase = subtract(modifiedBase, boringCut);
   }
 
   if (chamferEnabled) {
     const chamferCut = createChamferCut(width, depth, thickness, chamferSize, chamferOption);
-    modifiedBox = subtract(modifiedBox, chamferCut);
+    modifiedBase = subtract(modifiedBase, chamferCut);
   }
 
   const sizeText3D = createSizeText(width, depth, thickness);
@@ -273,7 +284,7 @@ const main = ({
 
   const woodScene = [];
 
-  woodScene.push(colorize([0.5, 1, 1], modifiedBox));
+  woodScene.push(colorize([0.5, 1, 1], modifiedBase));
   woodScene.push(colorize([0, 0, 0], positionedText));
 
   if (originEnabled) {
