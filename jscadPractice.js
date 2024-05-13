@@ -1,7 +1,7 @@
 const jscad = require('@jscad/modeling')
 const { cuboid, cylinder, circle, ellipsoid , rectangle, sphere } = jscad.primitives
 const { subtract, union } = jscad.booleans
-const { colorize } = jscad.colors
+const { colorize, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
 const { geom2 } = jscad.geometries
 const { hullChain } = jscad.hulls
@@ -83,8 +83,9 @@ const createBox = (width, depth, thickness) => {
 // }
 
 const createOrigin = (width, depth, thickness) => {
-  const originSphere = sphere({radius : 3, segment : 32})
-  const leftLowOrigin = translate([-width/2, -depth/2, thickness+2],originSphere)
+  const originSphere = colorize([1,0,0],sphere({radius : 1, segment : 32}))
+  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 3, segment : 32}))
+  const leftLowOrigin = translate([-width/2, -depth/2, thickness],[originSphere,originBigSphere])
 
   return leftLowOrigin
 
@@ -276,7 +277,7 @@ const main = ({
   woodScene.push(colorize([0, 0, 0], positionedText));
 
   if (originEnabled) {
-    woodScene.push(colorize([1,0,0],originM))
+    woodScene.push(originM)
   }
 
   return woodScene;
