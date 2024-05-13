@@ -1,5 +1,5 @@
 const jscad = require('@jscad/modeling')
-const { cuboid, cylinder, circle, ellipsoid , rectangle } = jscad.primitives
+const { cuboid, cylinder, circle, ellipsoid , rectangle, sphere } = jscad.primitives
 const { subtract, union } = jscad.booleans
 const { colorize } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
@@ -83,8 +83,8 @@ const createBox = (width, depth, thickness) => {
 // }
 
 const createOrigin = (width, depth, thickness) => {
-  const origin = cylinder({radius : 2, height : 4})
-  const leftLowOrigin = translate([-width/2, -depth/2, thickness+2],origin)
+  const originSphere = sphere({radius : 3, segment : 32})
+  const leftLowOrigin = translate([-width/2, -depth/2, thickness+2],originSphere)
 
   return leftLowOrigin
 
