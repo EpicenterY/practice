@@ -33,7 +33,7 @@ const getParameterDefinitions = () => [
     initial: '15'
   },
   //원점표시
-  { name: 'originEn', type: 'checkbox', caption: '원점 표시', checked: false }, 
+  { name: 'originEn', type: 'checkbox', caption: '원점 표시', checked: true }, 
 
   //후가공 추가
   //밑단홈파기
@@ -59,13 +59,12 @@ const getParameterDefinitions = () => [
   { name: 'cornerRoundBEn', type: 'checkbox', caption: 'B', checked: true },
   { name: 'cornerRoundCEn', type: 'checkbox', caption: 'C', checked: true },
   { name: 'cornerRoundDEn', type: 'checkbox', caption: 'D', checked: true },
-
   //원형타공 (Circle-cut)
   { name: 'circleCut', type: 'group', caption: '원형타공'},
   { name: 'circleCutEn', type: 'checkbox', caption: '원형타공적용', checked: false },
-  { name: 'circleCutPosX', type: 'int', initial: 0, caption: 'Hole X Position:' },
-  { name: 'circleCutPosY', type: 'int', initial: 0, caption: 'Hole Y Position:' },
-  { name: 'circleCutDiameter', type: 'int', initial: 50, caption: 'Hole Diameter:' },
+  { name: 'circleCutDisX', type: 'int', initial: 100, caption: '가로 간격 :' },
+  { name: 'circleCutDisY', type: 'int', initial: 100, caption: '세로 간격 :' },
+  { name: 'circleCutDia', type: 'int', initial: 35, caption: '원지름 :' },
   //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEn', type: 'checkbox', caption: '사각타공적용', checked: false },
@@ -173,21 +172,21 @@ const createCornerRound = (width, dp, thk, cornerRoundRadius, cornerRoundAEn, co
   return cornerCutBoxs;
 }
 
-
 //원형타공
-const createCircleCut = (width, dp, thk, circleCutPosX, circleCutPosY, circleCutDiameter) => {
-  const hole = circle({ radius: circleCutDiameter / 2, center: [circleCutPosX, circleCutPosY], segments: options.segments })
-  const hole3D = extrudeLinear({ height: thk*2 }, hole)
-  return hole3D
+const createCircleCut = (width, dp, thk, circleCutDisX, circleCutDisY, circleCutDia) => {
+  const circleCut = circle({ radius: circleCutDia / 2, center: [-width / 2 + circleCutDisX, -dp / 2 + circleCutDisY], segments: options.segments })
+  const circleCut3D = extrudeLinear({ height: thk*2 }, circleCut)
+  return circleCut3D
 }
 
+
+
 const createCircleCutMulti = (width, dp, thk, circleCutArray) => {
-  
   const hole3DMulti = [];
 
   // parameter가 배열로 넘어왔을때
   circleCutArray.forEach((el) => {
-    let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutPosX, el.circleCutPosY], segments: options.segments });
+    let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutDisX, el.circleCutDisY], segments: options.segments });
     let hole3D = extrudeLinear({ height: thk*2 }, hole);
     hole3DMulti.push(hole3D);
   });
@@ -244,7 +243,7 @@ const main = ({
   thkPocketWidth, thkPocketThk, thkPocketEn, //두께홈따기
   thkSlotWidth, thkSlotDp, thkSlotEn, //두께홈파기
   cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn, cornerRoundEn, //모서리라운딩
-  circleCutPosX, circleCutPosY, circleCutDiameter, circleCutEn,
+  circleCutDisX, circleCutDisY, circleCutDia, circleCutEn, //원형타공
   squareCutPosX, squareCutPosY, rectWidth, rectDp, squareCutEn,
   cornerHolesEn, boringEn, sholeX,
   chamferEn, chamferSize, chamferOption, circleCutArray
@@ -266,19 +265,16 @@ const main = ({
   }
   if (cornerRoundEn) {
     const cornerRound = createCornerRound (width, dp, thk, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
-    cornerRound.forEach((createCornerItem) => {
-      modifiedBase = subtract(modifiedBase, createCornerItem);
+    cornerRound.forEach((createCornerRoundItem) => {
+      modifiedBase = subtract(modifiedBase, createCornerRoundItem);
     });
   }
-
-
   if (circleCutEn) {
-    const holeCut = createCircleCut(width, dp, thk, circleCutPosX, circleCutPosY, circleCutDiameter);
-    modifiedBase = subtract(modifiedBase, holeCut);
+    const circleCut = createCircleCut(width, dp, thk, circleCutDisX, circleCutDisY, circleCutDia);
+    modifiedBase = subtract(modifiedBase, circleCut);
   }
   // 원형타공 multi 옵션
   if (circleCutEn) {
-
     // parameter 배열이면서 요소가 1개 이상 체크
     if (Array.isArray(circleCutArray) && circleCutArray.length > 0) {
       const holeCutMulti = createCircleCutMulti(width, dp, thk, circleCutArray);
