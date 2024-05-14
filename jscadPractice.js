@@ -77,13 +77,16 @@ const getParameterDefinitions = () => [
   { name: 'thkAngleCutEn',type:'checkbox',caption:'모서리사선커팅적용', checked: false },
   { name: 'thkAngleCutOption',type: 'radio', caption: 'Radio Buttons:', values: ['both', 'left', 'right' ],
   captions: ['양쪽', '왼쪽', '오른쪽'], initial: 'both' },
-
-
-  //그룹하나 끝
-  { name: 'boring', type: 'group', caption: '싱크대보링'},
-  { name: 'boringEn',type:'checkbox',caption:'싱크대보링적용', checked: false },
+  //액자커팅
+  { name: 'angleCut', type: 'group', caption: '액자커팅'},
+  { name: 'angleCutEn',type:'checkbox',caption:'액자커팅적용', checked: false },
+  { name: 'angleCutOption',type: 'radio', caption: 'Radio Buttons:', values: ['both', 'left', 'right' ],
+  captions: ['양쪽', '왼쪽', '오른쪽'], initial: 'both' },
+  //씽크대보링
+  { name: 'boring', type: 'group', caption: '씽크대보링'},
+  { name: 'boringEn',type:'checkbox',caption:'씽크대보링적용', checked: false },
   { name: 'sholeX', type: 'int', initial: 50, caption: 'Hole X Position:' },
-  //그룹하나 끝
+  //피스타공
   { name: 'conuterSink', type: 'group', caption: '피스타공'},
   { name: 'cornerHolesEn', type:'checkbox', caption:'피스타공적용', checked: false}
 ]
@@ -215,6 +218,22 @@ const createThkAngleCut = (width, dp, thk, thkAngleCutOption) =>{
   return thkAngleCutCuboids
 }
 
+//액자커팅
+const createAngleCut = (width, dp, thk, angleCutOption) => {
+  const angleCutCuboid = cuboid({size : [dp * 2 , dp * 2, thk ]})
+  const angleCutCuboids = [];
+  if(angleCutOption === 'left' ){
+    angleCutCuboids.push( translate([-width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+  }
+  if(angleCutOption === 'right' ){
+    angleCutCuboids.push( translate([ width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+  }
+  if(angleCutOption === 'both'){
+    angleCutCuboids.push( translate([-width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+    angleCutCuboids.push( translate([ width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+  }
+  return angleCutCuboids
+}
 
 
 const createBoringCut = (width, dp, thk, sholeX) => {
@@ -252,6 +271,7 @@ const main = ({
   circleCutDisX, circleCutDisY, circleCutDia, circleCutEn, //원형타공
   squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
   thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
+  angleCutOption, angleCutEn, //액자커팅
   cornerHolesEn, boringEn, sholeX,
   circleCutArray
 }) => {
@@ -300,6 +320,12 @@ const main = ({
       modifiedBase = subtract(modifiedBase, createThkAngleCutItem);
     });
   }
+  if (angleCutEn){
+    const angleCut = createAngleCut(width, dp, thk, angleCutOption);
+    angleCut.forEach((createAngleCutItem) => {
+    modifiedBase = subtract(modifiedBase, createAngleCutItem);
+  });
+}
 
   if (cornerHolesEn) {
     const cornerHoles = createCornerHoles(width, dp, thk);
