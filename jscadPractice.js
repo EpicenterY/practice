@@ -154,7 +154,7 @@ const createCornerRound = (width, dp, thk, cornerRoundRadius, cornerRoundAEn, co
   const cylinder = circle({radius : cornerRoundRadius, center: [-cornerRoundRadius, -cornerRoundRadius],
      segment: options.segments})
   const cylinder3D = extrudeLinear({height : thk}, cylinder)
-  const roundBox = rectangle({size : [roundRadius*2, roundRadius*2]});
+  const roundBox = rectangle({size : [cornerRoundRadius*2, cornerRoundRadius*2]});
   const roundBox3D = extrudeLinear({height : thk}, roundBox)
   const cornerCutBox = subtract(roundBox3D, cylinder3D)
   const cornerCutBoxs = [];
@@ -247,7 +247,6 @@ const main = ({
   circleCutPosX, circleCutPosY, circleCutDiameter, circleCutEn,
   squareCutPosX, squareCutPosY, rectWidth, rectDp, squareCutEn,
   cornerHolesEn, boringEn, sholeX,
-  roundRadius, roundedCorners, 
   chamferEn, chamferSize, chamferOption, circleCutArray
 }) => {
   const base = createBase(width, dp, thk);
@@ -267,7 +266,9 @@ const main = ({
   }
   if (cornerRoundEn) {
     const cornerRound = createCornerRound (width, dp, thk, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
-    modifiedBase = subtract(modifiedBase, cornerRound);
+    cornerRound.forEach((createCornerItem) => {
+      modifiedBase = subtract(modifiedBase, createCornerItem);
+    });
   }
 
 
