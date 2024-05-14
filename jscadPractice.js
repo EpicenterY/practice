@@ -85,7 +85,7 @@ const getParameterDefinitions = () => [
   //씽크대보링
   { name: 'boring', type: 'group', caption: '씽크대보링'},
   { name: 'boringEn',type:'checkbox',caption:'씽크대보링적용', checked: false },
-  { name: 'sholeX', type: 'int', initial: 50, caption: 'Hole X Position:' },
+  { name: 'boringDist', type: 'int', initial: 75, caption: '가로 간격 :' },
   //피스타공
   { name: 'conuterSink', type: 'group', caption: '피스타공'},
   { name: 'cornerHolesEn', type:'checkbox', caption:'피스타공적용', checked: false}
@@ -235,12 +235,13 @@ const createAngleCut = (width, dp, thk, angleCutOption) => {
   return angleCutCuboids
 }
 
-
-const createBoringCut = (width, dp, thk, sholeX) => {
-  const hole = circle({ radius: 35/2, center: [-width/2 + sholeX, 0], segments: options.segments })
+//씽크대보링
+const createBoring = (width, dp, thk, boringDist) => {
+  const hole = circle({ radius: 35/2, center: [-width/2 + boringDist, 0], segments: options.segments })
   const hole3D = extrudeLinear({ height: 50 }, hole)
   return translate([0, -dp/2 + 23, thk -13], hole3D);
 }
+
 
 const createCornerHoles = (width, dp, thk) => {
   const holeRadius = 2; // 피스타공 4mm
@@ -272,7 +273,8 @@ const main = ({
   squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
   thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
   angleCutOption, angleCutEn, //액자커팅
-  cornerHolesEn, boringEn, sholeX,
+  boringDist, boringEn,
+  cornerHolesEn,
   circleCutArray
 }) => {
   const base = createBase(width, dp, thk);
@@ -326,6 +328,10 @@ const main = ({
     modifiedBase = subtract(modifiedBase, createAngleCutItem);
   });
 }
+if (boringEn) {
+  const boringCut = createBoring(width, dp, thk, boringDist);
+  modifiedBase = subtract(modifiedBase, boringCut);
+}
 
   if (cornerHolesEn) {
     const cornerHoles = createCornerHoles(width, dp, thk);
@@ -334,10 +340,7 @@ const main = ({
 
 
 
-  if (boringEn) {
-    const boringCut = createBoringCut(width, dp, thk, sholeX);
-    modifiedBase = subtract(modifiedBase, boringCut);
-  }
+
 
 
   const sizeText3D = createSizeText(width, dp, thk);
