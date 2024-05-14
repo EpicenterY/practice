@@ -72,11 +72,13 @@ const getParameterDefinitions = () => [
   { name: 'squareCutDisY', type: 'int', initial: 200, caption: '세로 간격 :' },
   { name: 'rectWidth', type: 'int', initial: 50, caption: '길이 :' },
   { name: 'rectDp', type: 'int', initial: 50, caption: '폭 :' },
-  //그룹하나 끝
-  { name: 'chamfer', type: 'group', caption: '모서리사선커팅'},
-  { name: 'chamferEn',type:'checkbox',caption:'모서리사선커팅적용', checked: false },
-  { name: 'chamferOption',type: 'radio', caption: 'Radio Buttons:', values: ['left', 'right', 'both'], radiocaptions: ['왼쪽', '오른쪽', '양쪽'], initial: 'left' },
-  { name: 'chamferSize', type: 'int', initial: 15, caption: 'Chamfer size:' },
+  //모서리사선커팅
+  { name: 'thkAngleCut', type: 'group', caption: '모서리사선커팅'},
+  { name: 'thkAngleCutEn',type:'checkbox',caption:'모서리사선커팅적용', checked: false },
+  { name: 'thkAngleCutOption',type: 'radio', caption: 'Radio Buttons:', values: ['both', 'left', 'right' ],
+  captions: ['양쪽', '왼쪽', '오른쪽'], initial: 'both' },
+
+
   //그룹하나 끝
   { name: 'boring', type: 'group', caption: '싱크대보링'},
   { name: 'boringEn',type:'checkbox',caption:'싱크대보링적용', checked: false },
@@ -178,6 +180,16 @@ const createCircleCut = (width, dp, thk, circleCutDisX, circleCutDisY, circleCut
   const circleCut3D = extrudeLinear({ height: thk*2 }, circleCut)
   return circleCut3D
 }
+const createCircleCutMulti = (width, dp, thk, circleCutArray) => {
+  const hole3DMulti = [];
+  // parameter가 배열로 넘어왔을때
+  circleCutArray.forEach((el) => {
+    let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutDisX, el.circleCutDisY], segments: options.segments });
+    let hole3D = extrudeLinear({ height: thk*2 }, hole);
+    hole3DMulti.push(hole3D);
+  });
+  return hole3DMulti;
+}
 
 //사각타공
 const createSquareCut = (width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp) => {
@@ -186,34 +198,30 @@ const createSquareCut = (width, dp, thk, squareCutDisX, squareCutDisY, rectWidth
   return translate([-width / 2 + squareCutDisX + rectWidth / 2, - dp / 2 + squareCutDisY + rectDp / 2, 0], rect3D);
 }
 
-const createCircleCutMulti = (width, dp, thk, circleCutArray) => {
-  const hole3DMulti = [];
-  
-  // parameter가 배열로 넘어왔을때
-  circleCutArray.forEach((el) => {
-    let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutDisX, el.circleCutDisY], segments: options.segments });
-    let hole3D = extrudeLinear({ height: thk*2 }, hole);
-    hole3DMulti.push(hole3D);
-  });
-
-  return hole3DMulti;
+//모서리사선커팅
+const createThkAngleCut = (width, dp, thk, thkAngleCutOption) =>{
+  const thkAngleCutCuboid = cuboid({size : [thk * 2 , dp, thk * 2]})
+  const thkAngleCutCuboids = [];
+  if(thkAngleCutOption === 'left' ){
+    thkAngleCutCuboids.push( translate([-width / 2, 0, thk * Math.sqrt(2)], rotateY(Math.PI / 4, thkAngleCutCuboid)))
+  }
+  if(thkAngleCutOption === 'right' ){
+    thkAngleCutCuboids.push( translate([ width / 2, 0, thk * Math.sqrt(2)], rotateY(Math.PI / 4, thkAngleCutCuboid)))
+  }
+  if(thkAngleCutOption === 'both'){
+    thkAngleCutCuboids.push( translate([-width / 2, 0, thk * Math.sqrt(2)], rotateY(Math.PI / 4, thkAngleCutCuboid)))
+    thkAngleCutCuboids.push( translate([ width / 2, 0, thk * Math.sqrt(2)], rotateY(Math.PI / 4, thkAngleCutCuboid)))
+  }
+  return thkAngleCutCuboids
 }
+
+
 
 const createBoringCut = (width, dp, thk, sholeX) => {
   const hole = circle({ radius: 35/2, center: [-width/2 + sholeX, 0], segments: options.segments })
   const hole3D = extrudeLinear({ height: 50 }, hole)
   return translate([0, -dp/2 + 23, thk -13], hole3D);
 }
-
-const createChamferCut = (width, dp, thk, chamferOption, chamferSize) => {
-    const chamferBox = rectangle({ size: [50, dp] });
-    const chamferBox3D = extrudeLinear({ height: thk*2 }, chamferBox);
-    const chamferBoxs = [
-      translate([-width/2, 0], rotateY(-Math.PI / 4, chamferBox3D))
-    ]  
-    return chamferBoxs;
-}
-
 
 const createCornerHoles = (width, dp, thk) => {
   const holeRadius = 2; // 피스타공 4mm
@@ -242,9 +250,10 @@ const main = ({
   thkSlotWidth, thkSlotDp, thkSlotEn, //두께홈파기
   cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn, cornerRoundEn, //모서리라운딩
   circleCutDisX, circleCutDisY, circleCutDia, circleCutEn, //원형타공
-  squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn,
+  squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
+  thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
   cornerHolesEn, boringEn, sholeX,
-  chamferEn, chamferSize, chamferOption, circleCutArray
+  circleCutArray
 }) => {
   const base = createBase(width, dp, thk);
   let modifiedBase = base;
@@ -276,18 +285,20 @@ const main = ({
     // parameter 배열이면서 요소가 1개 이상 체크
     if (Array.isArray(circleCutArray) && circleCutArray.length > 0) {
       const holeCutMulti = createCircleCutMulti(width, dp, thk, circleCutArray);
-  
       holeCutMulti.forEach((holeCut) => {
         modifiedBase = subtract(modifiedBase, holeCut);
       });
     }
-
   }
-
   if (squareCutEn) {
     const squareCut = createSquareCut(width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp);
     modifiedBase = subtract(modifiedBase, squareCut);
-    
+  }
+  if (thkAngleCutEn){
+    const thkCut = createThkAngleCut(width, dp, thk, thkAngleCutOption);
+    thkCut.forEach((createThkAngleCutItem) => {
+      modifiedBase = subtract(modifiedBase, createThkAngleCutItem);
+    });
   }
 
   if (cornerHolesEn) {
@@ -302,10 +313,6 @@ const main = ({
     modifiedBase = subtract(modifiedBase, boringCut);
   }
 
-  if (chamferEn) {
-    const chamferCut = createChamferCut(width, dp, thk, chamferSize, chamferOption);
-    modifiedBase = subtract(modifiedBase, chamferCut);
-  }
 
   const sizeText3D = createSizeText(width, dp, thk);
   const positionedText = translate([0, 0, thk], sizeText3D);
