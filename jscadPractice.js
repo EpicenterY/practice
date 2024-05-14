@@ -1,5 +1,5 @@
 const jscad = require('@jscad/modeling')
-const { cuboid, cylinder, circle, ellipsoid , rectangle, sphere } = jscad.primitives
+const { cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere } = jscad.primitives
 const { subtract, union } = jscad.booleans
 const { colorize, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
@@ -68,10 +68,10 @@ const getParameterDefinitions = () => [
   //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEn', type: 'checkbox', caption: '사각타공적용', checked: false },
-  { name: 'squareCutPosX', type: 'int', initial: 75, caption: 'Rect X Position:' },
-  { name: 'squareCutPosY', type: 'int', initial: 50, caption: 'Rect Y Position:' },
-  { name: 'rectWidth', type: 'int', initial: 45, caption: 'Rect Width:' },
-  { name: 'rectDp', type: 'int', initial: 45, caption: 'Rect Dp:' },
+  { name: 'squareCutDisX', type: 'int', initial: 200, caption: '가로 간격 :' },
+  { name: 'squareCutDisY', type: 'int', initial: 200, caption: '세로 간격 :' },
+  { name: 'rectWidth', type: 'int', initial: 50, caption: '길이 :' },
+  { name: 'rectDp', type: 'int', initial: 50, caption: '폭 :' },
   //그룹하나 끝
   { name: 'chamfer', type: 'group', caption: '모서리사선커팅'},
   { name: 'chamferEn',type:'checkbox',caption:'모서리사선커팅적용', checked: false },
@@ -179,11 +179,16 @@ const createCircleCut = (width, dp, thk, circleCutDisX, circleCutDisY, circleCut
   return circleCut3D
 }
 
-
+//사각타공
+const createSquareCut = (width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp) => {
+  const rect = roundedRectangle({ size: [rectWidth, rectDp], roundRadius :2.5 });
+  const rect3D = extrudeLinear({ height: thk }, rect);
+  return translate([-width / 2 + squareCutDisX + rectWidth / 2, - dp / 2 + squareCutDisY + rectDp / 2, 0], rect3D);
+}
 
 const createCircleCutMulti = (width, dp, thk, circleCutArray) => {
   const hole3DMulti = [];
-
+  
   // parameter가 배열로 넘어왔을때
   circleCutArray.forEach((el) => {
     let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutDisX, el.circleCutDisY], segments: options.segments });
@@ -209,13 +214,6 @@ const createChamferCut = (width, dp, thk, chamferOption, chamferSize) => {
     return chamferBoxs;
 }
 
-const createSquareCut = (width, dp, thk, squareCutPosX, squareCutPosY, rectWidth, rectDp) => {
-  // 사각형 생성
-  const rect = rectangle({ size: [rectWidth, rectDp] });
-  const rect3D = extrudeLinear({ height: thk + 10 }, rect);  // 박스를 완전히 관통하기 위해 두께보다 더 높게 설정
-  // 사각형 위치 조정
-  return translate([squareCutPosX - rectWidth / 2, squareCutPosY - rectDp / 2, -5], rect3D);
-}
 
 const createCornerHoles = (width, dp, thk) => {
   const holeRadius = 2; // 피스타공 4mm
@@ -244,7 +242,7 @@ const main = ({
   thkSlotWidth, thkSlotDp, thkSlotEn, //두께홈파기
   cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn, cornerRoundEn, //모서리라운딩
   circleCutDisX, circleCutDisY, circleCutDia, circleCutEn, //원형타공
-  squareCutPosX, squareCutPosY, rectWidth, rectDp, squareCutEn,
+  squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn,
   cornerHolesEn, boringEn, sholeX,
   chamferEn, chamferSize, chamferOption, circleCutArray
 }) => {
@@ -287,7 +285,7 @@ const main = ({
   }
 
   if (squareCutEn) {
-    const squareCut = createSquareCut(width, dp, thk, squareCutPosX, squareCutPosY, rectWidth, rectDp);
+    const squareCut = createSquareCut(width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp);
     modifiedBase = subtract(modifiedBase, squareCut);
     
   }
