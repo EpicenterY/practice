@@ -19,6 +19,7 @@ const getParameterDefinitions = () => [
     captions: ['미송집성목', '삼나무집성목', '멀바우집성목', '아카시아집성목', '스프러스집성목'],
     initial: '1'
   },
+  //목재 크기설정
   { name: 'thickness', type: 'choice', caption: '목재 두께 :',
     values: [4.5, 15, 18, 24, 30],
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
@@ -31,14 +32,20 @@ const getParameterDefinitions = () => [
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
     initial: '15'
   },
-  { name: 'originEnabled', type: 'checkbox', caption: '원점 표시', checked: false },
+  //원점표시
+  { name: 'originEnabled', type: 'checkbox', caption: '원점 표시', checked: false }, 
 
-  //후가공 선택
+  //후가공 추가
   //밑단홈파기
   { name: 'bottomGrooving', type: 'group', caption: '밑단홈파기'},
   { name: 'bottomGroovingEnabled', type: 'checkbox', caption: '밑단홈파기적용', checked: false },
-  { name: 'bottomGroovingWidth', type: 'int', initial: 10, caption: '폭 :' },
-  { name: 'bottomGroovingDepth', type: 'int', initial: 5, caption: '깊이 :' },
+  { name: 'bottomGroovingDepth', type: 'int', initial: 10, caption: '폭 :' },
+  { name: 'bottomGroovingThickness', type: 'int', initial: 5, caption: '깊이 :' },
+  //두께홈따기
+  { name: 'thicknessPocketing', type: 'group', caption: '두께홈따기'},
+  { name: 'thicknessPocketingEnabled', type: 'checkbox', caption: '.두께홈따기적용', checked: false },
+  { name: 'thicknessPocketingDepth', type: 'int', initial: 20, caption: '폭 :' },
+  { name: 'thicknessPocketingThickness', type: 'int', initial: 10, caption: '깊이 :' },
   //원형타공 (Circle-cut)
   { name: 'circleCut', type: 'group', caption: '원형타공'},
   { name: 'circleCutEnabled', type: 'checkbox', caption: '원형타공적용', checked: false },
@@ -117,11 +124,20 @@ const createOrigin = (width, depth, thickness) => {
 }
 
 //밑단홈파기
-const createBottomGrooving = (width, depth, bottomGroovingWidth, bottomGroovingDepth, thickness) => {
-  const bottomGroovingCuboid = cuboid({size:[width, 5, bottomGroovingDepth]})
-  return translate([0, - depth / 2 + bottomGroovingWidth, thickness - bottomGroovingDepth/2],bottomGroovingCuboid)
+const createBottomGrooving = (width, depth, bottomGroovingDepth, bottomGroovingThickness, thickness) => {
+  const bottomGroovingCuboid = cuboid({size:[width, 5, bottomGroovingThickness]})
+  return translate([0, - depth / 2 + 1.5 * bottomGroovingDepth, thickness - bottomGroovingThickness/2],
+  bottomGroovingCuboid)
 }
 
+//두께홈따기
+const createThicknessPocketing = (width, depth, thickness, thicknessPocketingDepth, thicknessPocketingThickness) =>{
+  const thicknessPocketingCuboid = cuboid({size:[width, thicknessPocketingDepth, thicknessPocketingThickness]})
+  return translate([0, - depth / 2 + thicknessPocketingDepth /2 , thickness - thicknessPocketingThickness/2],
+  thicknessPocketingCuboid)
+}
+
+//원형타공
 const createCircleCut = (width, depth, thickness, circleCutPosX, circleCutPosY, circleCutDiameter) => {
   const hole = circle({ radius: circleCutDiameter / 2, center: [circleCutPosX, circleCutPosY], segments: options.segments })
   const hole3D = extrudeLinear({ height: thickness*2 }, hole)
@@ -213,7 +229,8 @@ const createSquareSideCut = (width, depth, thickness) => {
 const main = ({
   width, depth, thickness, //기본치수
   originEnabled, //원점
-  bottomGroovingWidth, bottomGroovingDepth, bottomGroovingEnabled, //밑단홈파기
+  bottomGroovingDepth, bottomGroovingThickness, bottomGroovingEnabled, //밑단홈파기
+  thicknessPocketingDepth, thicknessPocketingThickness, thicknessPocketingEnabled, //두께홈따기
   circleCutPosX, circleCutPosY, circleCutDiameter, circleCutEnabled,
   squareCutPosX, squareCutPosY, rectWidth, rectDepth, squareCutEnabled,
   cornerHolesEnabled, slotCutEnabled, boringEnabled, sholeX,
@@ -224,8 +241,12 @@ const main = ({
   let modifiedBase = base;
 
   if (bottomGroovingEnabled) {
-    const bottomGrooving = createBottomGrooving(width, depth, bottomGroovingWidth, bottomGroovingDepth, thickness);
+    const bottomGrooving = createBottomGrooving(width, depth, bottomGroovingDepth, bottomGroovingThickness, thickness);
     modifiedBase = subtract(modifiedBase, bottomGrooving);
+  }
+  if (thicknessPocketingEnabled){
+    const thicknessPocketing = createThicknessPocketing(width, depth, thickness, thicknessPocketingDepth, thicknessPocketingThickness);
+    modifiedBase = subtract(modifiedBase, thicknessPocketing);
   }
 
 
