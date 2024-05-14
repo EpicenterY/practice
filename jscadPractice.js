@@ -1,5 +1,5 @@
 const jscad = require('@jscad/modeling')
-const { cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere } = jscad.primitives
+const { cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere, torus } = jscad.primitives
 const { subtract, union } = jscad.booleans
 const { colorize, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
@@ -248,7 +248,7 @@ const createBoring = (width, dp, thk, boringDist) => {
 }
 
 //절단면라운딩
-const createFillet = (width, dp, thk, filletOption, cornerRoundEn) =>{
+const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn) =>{
   const filletRadius = 4
   const edgeCylinderWidth = cylinder({radius : filletRadius, height : width});
   const edgeCuboidWidth = translate([filletRadius / 2, filletRadius / 2, 0],cuboid({size : [filletRadius, filletRadius, width]}))
@@ -256,17 +256,68 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn) =>{
   const edgeCylinderDepth = cylinder({radius : filletRadius, height : dp});
   const edgeCuboidDepth = translate([filletRadius / 2, filletRadius / 2, 0],cuboid({size : [filletRadius, filletRadius, dp]}))
   const linearFilletDepth = subtract(edgeCuboidDepth, edgeCylinderDepth);
-  const linearFillet = [
+  const linearFilletUpper = [
     translate([-width / 2 + filletRadius, 0, thk - filletRadius], rotateZ( Math.PI, rotateX(Math.PI / 2, linearFilletWidth))),
     translate([ width / 2 - filletRadius, 0, thk - filletRadius], rotateX( Math.PI / 2, linearFilletWidth)),
     translate([ 0, dp / 2 - filletRadius, thk - filletRadius], rotateY(-Math.PI / 2, linearFilletDepth)),
     translate([ 0, -width / 2 + filletRadius, thk - filletRadius], rotateZ(-Math.PI / 2, rotateX(Math.PI / 2, linearFilletDepth)))
   ];
-  const linearFilletLower = rotateY(Math.PI , linearFillet)
-  // if(filletOption === 'upper'){
+  const linearFilletLower = translate([0,0, thk],rotateY(Math.PI , linearFilletUpper));
+
+  const roundEdgeTorus = torus({ innerRadius : filletRadius, outerRadius : cornerRoundRadius - filletRadius});
+  const roundEdgeCylinder = cylinder({radius : cornerRoundRadius-filletRadius, height : filletRadius * 2});
+  const roundEdgeCuboid = translate([cornerRoundRadius/2, cornerRoundRadius/2, filletRadius/2],cuboid({size : [cornerRoundRadius , cornerRoundRadius , filletRadius]}));
+  const roundEdgeUnion = union(roundEdgeTorus,roundEdgeCylinder);
+  const roundEdgeCut = subtract(roundEdgeCuboid, roundEdgeUnion)
+
+  const roundFilletUpper = [
+    translate([ width / 2 - cornerRoundRadius,  dp / 2 - cornerRoundRadius, thk - filletRadius], roundEdgeCut), //C
+    translate([ width / 2 - cornerRoundRadius, -dp / 2 + cornerRoundRadius, thk - filletRadius], rotateZ(-Math.PI / 2 , roundEdgeCut)), //D
+    translate([-width / 2 + cornerRoundRadius, -dp / 2 + cornerRoundRadius, thk - filletRadius], rotateZ(-Math.PI , roundEdgeCut)), //B
+    translate([-width / 2 + cornerRoundRadius,  dp / 2 - cornerRoundRadius, thk - filletRadius], rotateZ( Math.PI / 2 , roundEdgeCut)) //A
+  ]
+
+  const roundFilletLower = translate([0,0, thk],rotateY(Math.PI , roundFilletUpper));
+
+  const fillet = [];
+  if(filletOption === 'upper'){
+    fillet.push(linearFilletUpper);
+    if(cornerRoundEn){
+      if(cornerRoundAEn){
+        fillet.push(translate([-width / 2 + cornerRoundRadius,  dp / 2 - cornerRoundRadius, thk - filletRadius], rotateZ( Math.PI / 2 , roundEdgeCut))); // A
+      }
+      if(cornerRoundBEn){
+        fillet.push(translate([-width / 2 + cornerRoundRadius, -dp / 2 + cornerRoundRadius, thk - filletRadius], rotateZ(-Math.PI , roundEdgeCut))); // B
+      }
+      if(cornerRoundCEn){
+        fillet.push(translate([ width / 2 - cornerRoundRadius,  dp / 2 - cornerRoundRadius, thk - filletRadius], roundEdgeCut)); // C
+      }
+      if(cornerRoundDEn){
+        fillet.push(translate([ width / 2 - cornerRoundRadius, -dp / 2 + cornerRoundRadius, thk - filletRadius], rotateZ(-Math.PI / 2 , roundEdgeCut))); // D
+      }
+    }
+  }
+  if(filletOption === 'lower'){
+    fillet.push(linearFilletLower);
+    if(cornerRoundEn){
+      if(cornerRoundAEn){
+        fillet.push( roundFilletLower[3] ); // A
+      }
+      if(cornerRoundBEn){
+        fillet.push( roundFilletLower[2] ); // B
+      }
+      if(cornerRoundCEn){
+        fillet.push( roundFilletLower[0] ); // C
+      }
+      if(cornerRoundDEn){
+        fillet.push( roundFilletLower[1] ); // D
+      }
+    }
+  }
+  if(filletOption === 'both'){
     
-  // }
-  return linearFilletLower
+  }
+  return fillet;
 }
 
 
@@ -302,7 +353,7 @@ const main = ({
   squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
   thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
   angleCutOption, angleCutEn, //액자커팅
-  filletEn, //절단면라운딩
+  filletOption, filletEn, //절단면라운딩
   boringDist, boringEn,
   cornerHolesEn,
   circleCutArray
@@ -324,9 +375,10 @@ const main = ({
   }
   if (cornerRoundEn) {
     const cornerRound = createCornerRound (width, dp, thk, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
-    cornerRound.forEach((createCornerRoundItem) => {
-      modifiedBase = subtract(modifiedBase, createCornerRoundItem);
-    });
+    // cornerRound.forEach((createCornerRoundItem) => {
+    //   modifiedBase = subtract(modifiedBase, createCornerRoundItem);
+    // });
+    modifiedBase = subtract(modifiedBase, cornerRound);
   }
   if (circleCutEn) {
     const circleCut = createCircleCut(width, dp, thk, circleCutDisX, circleCutDisY, circleCutDia);
@@ -348,22 +400,24 @@ const main = ({
   }
   if (thkAngleCutEn){
     const thkCut = createThkAngleCut(width, dp, thk, thkAngleCutOption);
-    thkCut.forEach((createThkAngleCutItem) => {
-      modifiedBase = subtract(modifiedBase, createThkAngleCutItem);
-    });
+    // thkCut.forEach((createThkAngleCutItem) => {
+    //   modifiedBase = subtract(modifiedBase, createThkAngleCutItem);
+    // });
+    modifiedBase = subtract(modifiedBase, thkCut);
   }
   if (angleCutEn){
     const angleCut = createAngleCut(width, dp, thk, angleCutOption);
-    angleCut.forEach((createAngleCutItem) => {
-    modifiedBase = subtract(modifiedBase, createAngleCutItem);
-  });
+  //   angleCut.forEach((createAngleCutItem) => {
+  //   modifiedBase = subtract(modifiedBase, createAngleCutItem);
+  // });
+    modifiedBase = subtract(modifiedBase, angleCut);
   }
   if (boringEn) {
     const boringCut = createBoring(width, dp, thk, boringDist);
     modifiedBase = subtract(modifiedBase, boringCut);
   }
   if (filletEn) {
-    const fillet = createFillet(width, dp, thk, cornerRoundEn);
+    const fillet = createFillet(width, dp, thk, filletOption, cornerRoundEn, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
     modifiedBase = union(modifiedBase, fillet);
   }
 
