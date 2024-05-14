@@ -223,14 +223,14 @@ const createAngleCut = (width, dp, thk, angleCutOption) => {
   const angleCutCuboid = cuboid({size : [dp * 2 , dp * 2, thk ]})
   const angleCutCuboids = [];
   if(angleCutOption === 'left' ){
-    angleCutCuboids.push( translate([-width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+    angleCutCuboids.push( translate([-width / 2, -dp * Math.sqrt(2) + dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
   }
   if(angleCutOption === 'right' ){
-    angleCutCuboids.push( translate([ width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+    angleCutCuboids.push( translate([ width / 2, -dp * Math.sqrt(2) + dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
   }
   if(angleCutOption === 'both'){
-    angleCutCuboids.push( translate([-width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
-    angleCutCuboids.push( translate([ width / 2, dp * Math.sqrt(2) - dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+    angleCutCuboids.push( translate([-width / 2, -dp * Math.sqrt(2) + dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
+    angleCutCuboids.push( translate([ width / 2, -dp * Math.sqrt(2) + dp / 2, thk/2], rotateZ(Math.PI / 4, angleCutCuboid)))
   }
   return angleCutCuboids
 }
