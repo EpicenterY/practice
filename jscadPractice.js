@@ -7,7 +7,7 @@ const { geom2 } = jscad.geometries
 const { hullChain } = jscad.hulls
 const { mat4 } = jscad.maths
 const { vectorText } = jscad.text
-const { translate, scale, rotateY, rotateZ, center } = jscad.transforms
+const { translate, scale, rotateX, rotateY, rotateZ, center } = jscad.transforms
 
 const options = { segments: 32 }
 
@@ -86,6 +86,11 @@ const getParameterDefinitions = () => [
   { name: 'boring', type: 'group', caption: '씽크대보링'},
   { name: 'boringEn',type:'checkbox',caption:'씽크대보링적용', checked: false },
   { name: 'boringDist', type: 'int', initial: 75, caption: '가로 간격 :' },
+  //절단면라운딩
+  { name: 'fillet', type: 'group', caption: '절단면라운딩'},
+  { name: 'filletEn',type:'checkbox',caption:'절단면라운딩적용', checked: false },
+  { name: 'filletOption',type: 'radio', caption: 'Radio Buttons:', values: ['both', 'upper', 'lower' ],
+  captions: ['모두', '위쪽', '아래쪽'], initial: 'both' },
   //피스타공
   { name: 'conuterSink', type: 'group', caption: '피스타공'},
   { name: 'cornerHolesEn', type:'checkbox', caption:'피스타공적용', checked: false}
@@ -242,6 +247,30 @@ const createBoring = (width, dp, thk, boringDist) => {
   return translate([0, -dp/2 + 23, thk -13], hole3D);
 }
 
+//절단면라운딩
+const createFillet = (width, dp, thk, filletOption, cornerRoundEn) =>{
+  const filletRadius = 4
+  const edgeCylinderWidth = cylinder({radius : filletRadius, height : width});
+  const edgeCuboidWidth = translate([filletRadius / 2, filletRadius / 2, 0],cuboid({size : [filletRadius, filletRadius, width]}))
+  const linearFilletWidth = subtract(edgeCuboidWidth, edgeCylinderWidth);
+  const edgeCylinderDepth = cylinder({radius : filletRadius, height : dp});
+  const edgeCuboidDepth = translate([filletRadius / 2, filletRadius / 2, 0],cuboid({size : [filletRadius, filletRadius, dp]}))
+  const linearFilletDepth = subtract(edgeCuboidDepth, edgeCylinderDepth);
+  const linearFillet = [
+    translate([-width / 2 + filletRadius, 0, thk - filletRadius], rotateZ( Math.PI, rotateX(Math.PI / 2, linearFilletWidth))),
+    translate([ width / 2 - filletRadius, 0, thk - filletRadius], rotateX( Math.PI / 2, linearFilletWidth)),
+    translate([ 0, dp / 2 - filletRadius, thk - filletRadius], rotateY(-Math.PI / 2, linearFilletDepth)),
+    translate([ 0, -width / 2 + filletRadius, thk - filletRadius], rotateZ(-Math.PI / 2, rotateX(Math.PI / 2, linearFilletDepth)))
+  ];
+  const linearFilletLower = rotateY(Math.PI , linearFillet)
+  // if(filletOption === 'upper'){
+    
+  // }
+  return linearFilletLower
+}
+
+
+
 
 const createCornerHoles = (width, dp, thk) => {
   const holeRadius = 2; // 피스타공 4mm
@@ -273,6 +302,7 @@ const main = ({
   squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
   thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
   angleCutOption, angleCutEn, //액자커팅
+  filletEn, //절단면라운딩
   boringDist, boringEn,
   cornerHolesEn,
   circleCutArray
@@ -327,11 +357,15 @@ const main = ({
     angleCut.forEach((createAngleCutItem) => {
     modifiedBase = subtract(modifiedBase, createAngleCutItem);
   });
-}
-if (boringEn) {
-  const boringCut = createBoring(width, dp, thk, boringDist);
-  modifiedBase = subtract(modifiedBase, boringCut);
-}
+  }
+  if (boringEn) {
+    const boringCut = createBoring(width, dp, thk, boringDist);
+    modifiedBase = subtract(modifiedBase, boringCut);
+  }
+  if (filletEn) {
+    const fillet = createFillet(width, dp, thk, cornerRoundEn);
+    modifiedBase = union(modifiedBase, fillet);
+  }
 
   if (cornerHolesEn) {
     const cornerHoles = createCornerHoles(width, dp, thk);
