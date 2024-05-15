@@ -147,9 +147,21 @@ const text = (message, extrusionHeight, characterLineWidth) => {
   return center({ axes: [true, true, false] }, message3D)
 }
 
-//중앙표시 텍스트
+// //중앙표시 텍스트
+// const createSizeText = (width, dp, thk) => {
+//   const sizeText = `${width}mm X ${dp}mm X ${thk}T`
+//   const sizeTextStr = sizeText.toString()
+//   if (sizeText.length === 0) {
+//     return []
+//   }
+//   let sizeText3D = text(sizeText.toString(), 2, 1)
+//   sizeText3D = scale([0.5, 0.5, 0.5], sizeText3D)
+//   sizeText3D = translate([0, 0, 0], sizeText3D)
+//   return sizeText3D
+// }
+//중앙표시 텍스트(수정)
 const createSizeText = (width, dp, thk) => {
-  const sizeText = `${width}mm X ${dp}mm X ${thk}T`
+  const sizeText = `${thk}T`
   const sizeTextStr = sizeText.toString()
   if (sizeText.length === 0) {
     return []
