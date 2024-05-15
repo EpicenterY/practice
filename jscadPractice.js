@@ -507,22 +507,15 @@ const main = ({
   if (cornerRoundEn) {
     const cornerRound = createCornerRound (width, dp, thk, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
     modifiedBase = subtract(modifiedBase, cornerRound);
-    addFeature = union(addFeature,intersect(base,cornerRound));
+    // fix: 제거된 피처표시 미노출 수정 :: ggybbo
+    cornerRound.forEach((cornerRoundItem) => {
+      addFeature = union(addFeature,intersect(base,cornerRoundItem));
+    });
   }
   if (circleCutEn) {
     const circleCut = createCircleCut(width, dp, thk, circleCutDisX, circleCutDisY, circleCutDia);
     modifiedBase = subtract(modifiedBase, circleCut);
     addFeature = union(addFeature,intersect(base,circleCut));
-  }
-  // 원형타공 multi 옵션
-  if (circleCutEn) {
-    // parameter 배열이면서 요소가 1개 이상 체크
-    if (Array.isArray(circleCutArray) && circleCutArray.length > 0) {
-      const holeCutMulti = createCircleCutMulti(width, dp, thk, circleCutArray);
-      // holeCutMulti.forEach((holeCut) => {
-      //   modifiedBase = subtract(modifiedBase, holeCut);
-      // });
-    }
   }
   if (squareCutEn) {
     const squareCut = createSquareCut(width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp);
@@ -534,13 +527,19 @@ const main = ({
     const thkCut = createThkAngleCut(width, dp, thk, thkAngleCutOption);
     modifiedBase = subtract(modifiedBase, thkCut);
     // addFeature = union(base,thkCut);
-    addFeature = union(addFeature,intersect(base,thkCut));
+    // fix: 제거된 피처표시 미노출 수정 :: ggybbo
+    thkCut.forEach((thkCutItem) => {
+      addFeature = union(addFeature,intersect(base,thkCutItem));
+    });
   }
   if (angleCutEn){
     const angleCut = createAngleCut(width, dp, thk, angleCutOption);
     modifiedBase = subtract(modifiedBase, angleCut);
     // addFeature = union(base,angleCut);
-    addFeature = union(addFeature,intersect(base,angleCut));
+    // fix: 제거된 피처표시 미노출 수정 :: ggybbo
+    angleCut.forEach((angleCutItem) => {
+      addFeature = union(addFeature,intersect(base,angleCutItem));
+    });
   }
   if (boringEn) {
     const boringCut = createBoring(width, dp, thk, boringDist);
@@ -552,17 +551,26 @@ const main = ({
     const fillet = createFillet(width, dp, thk, filletOption, cornerRoundEn, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
     modifiedBase = subtract(modifiedBase, fillet);
     // addFeature = union(base,fillet);
-    addFeature = union(addFeature,intersect(base,fillet));
+    // fix: 제거된 피처표시 미노출 수정 :: ggybbo
+    fillet.forEach((filletItem) => {
+      // fix: 모서리라운딩과 동시 적용시 filletItem 갯수가 0이거나 Array type이 아닌 경우가 존재, 이유는 상상이 되지 않음 :: ggybbo
+      if (Array.isArray(filletItem) && filletItem.length > 0) {
+        filletItem.forEach((filletItemEach) => {
+          addFeature = union(addFeature,intersect(base,filletItemEach));
+        })
+      }
+    });
   }
 
   if (counterSinkEn) {
     const counterSink = createCounterSink(width, dp, thk, counterSinkAEn, counterSinkBEn, counterSinkCEn);
     modifiedBase = subtract(modifiedBase, counterSink);
     // addFeature = union(base,counterSink);
-    addFeature = union(addFeature,intersect(base,counterSink));
+    // fix: 제거된 피처표시 미노출 수정 :: ggybbo
+    counterSink.forEach((counterSinkItem) => {
+      addFeature = union(addFeature,intersect(base,counterSinkItem));
+    });
   }
-
-
 
   const sizeText3D = createSizeText(width, dp, thk);
   const positionedText = translate([0, 0, thk], sizeText3D);
