@@ -3,7 +3,8 @@ const {line, cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, 
 const { subtract, union, intersect} = jscad.booleans
 const { colorize, hexToRgb, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
-const { geom2 } = jscad.geometries
+const { geom2, path2 } = jscad.geometries
+const { bezier } = jscad.curves
 const { hullChain } = jscad.hulls
 const { mat4 } = jscad.maths
 const { vectorText } = jscad.text
@@ -73,10 +74,10 @@ const getParameterDefinitions = () => [
   //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEn', type: 'checkbox', caption: '사각타공적용', checked: false },
-  { name: 'squareCutDisX', type: 'int', initial: 200, caption: '가로 간격 :' },
-  { name: 'squareCutDisY', type: 'int', initial: 200, caption: '세로 간격 :' },
-  { name: 'rectWidth', type: 'int', initial: 50, caption: '길이 :' },
-  { name: 'rectDp', type: 'int', initial: 50, caption: '폭 :' },
+  { name: 'squareCutDisX', type: 'int', initial: 60, caption: '가로 간격 :' },
+  { name: 'squareCutDisY', type: 'int', initial: 205, caption: '세로 간격 :' },
+  { name: 'rectWidth', type: 'int', initial: 30, caption: '길이 :' },
+  { name: 'rectDp', type: 'int', initial: 30, caption: '폭 :' },
   //모서리사선커팅
   { name: 'thkAngleCut', type: 'group', caption: '모서리사선커팅'},
   { name: 'thkAngleCutEn',type:'checkbox',caption:'모서리사선커팅적용', checked: false },
@@ -108,6 +109,31 @@ const getParameterDefinitions = () => [
 const createBase = (width, dp, thk) => {
   const base = cuboid({ size: [width, dp, thk] })
   return translate([0, 0, thk / 2], base)
+}
+
+//결방향 표시
+const createGrain = (width, dp, thk) => {
+  const points = [
+    [-width / 2, 0],
+    [-width / 4, -10],
+    [0, 30],
+    [width / 4, -5],
+    [width / 2+3, 10]
+  ]
+  const bezierCurve = bezier.create(points)
+  const curvePoints = []
+  for (let t = 0; t <= 1; t += 0.01) {
+    curvePoints.push(bezier.valueAt(t, bezierCurve))
+  }
+  const smoothPath = path2.fromPoints({ closed: false }, curvePoints)
+
+  const smoothPaths = [
+    smoothPath,
+    translate([0, dp/3, 0],smoothPath),
+    translate([0, -dp/3, 0],smoothPath)
+  ]
+
+  return translate([0,0,thk],smoothPaths);
 }
 
 //가독성을 위한 라인생성
@@ -167,7 +193,6 @@ const createSizeText = (width, dp, thk) => {
     return []
   }
   let sizeText3D = text(sizeText.toString(), 2, 1)
-  sizeText3D = scale([0.5, 0.5, 0.5], sizeText3D)
   sizeText3D = translate([0, 0, 0], sizeText3D)
   return sizeText3D
 }
@@ -588,7 +613,8 @@ const main = ({
   const positionedText = translate([0, 0, thk], sizeText3D);
   const originM = createOrigin(width, dp, thk);
   const line = createLine(width, dp, thk);
-  const dLine = createDLine(width,dp, thk)
+  const dLine = createDLine(width,dp, thk);
+  const grain = createGrain(width, dp, thk);
 
   const woodScene = [];
   const addScene =[];
@@ -610,6 +636,7 @@ const main = ({
   woodScene.push(colorize([0, 0, 0], positionedText));
   woodScene.push(colorize([0, 0, 0], line));
   woodScene.push(colorize([0, 0, 0], dLine));
+  woodScene.push(colorize([0, 0, 0], grain));
 
   if(addSceneEn){
     addScene.push(colorize([1,0,0,alpha2],addFeature));
