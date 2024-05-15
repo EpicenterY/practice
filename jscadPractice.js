@@ -20,6 +20,8 @@ const getParameterDefinitions = () => [
   { name: 'addSceneEn', type: 'checkbox', caption: '제거된피쳐표시', checked: false},
   { name: 'alpha2', type: 'number', initial: 1, min: 0.1, max: 1, step: 0.1, caption: '제거된피쳐 투명도 : '},
   { name: 'color', type: 'color', initial: '#d4d4d4', caption : '컬러변경'},
+  { name: 'grainEn', type: 'checkbox', caption: '결방향표시', checked: true},
+  { name: 'grainAlpha', type: 'number', initial: 0.5, min: 0.1, max: 1, step: 0.1, caption: '결표시투명도 : '},
   //목재 선택
   { name: 'woodSelection', type: 'group', caption: '목재 선택'},
   { name: 'type', type: 'choice', caption: '목재 종류 :',
@@ -113,27 +115,62 @@ const createBase = (width, dp, thk) => {
 
 //결방향 표시
 const createGrain = (width, dp, thk) => {
-  const points = [
-    [-width / 2, 0],
-    [-width / 4, -10],
-    [0, 30],
-    [width / 4, -5],
-    [width / 2+3, 10]
-  ]
-  const bezierCurve = bezier.create(points)
-  const curvePoints = []
-  for (let t = 0; t <= 1; t += 0.01) {
-    curvePoints.push(bezier.valueAt(t, bezierCurve))
+  const interval = 50;
+  const grainNum = Math.floor((dp / 2 - 10) / interval);
+  
+  const createCurve = (points)=>{
+    const bezierCurve = bezier.create(points)
+    const curvePoints = []
+    for (let t = 0; t <= 1; t += 0.01) {
+      curvePoints.push(bezier.valueAt(t, bezierCurve))
+    }
+    const smoothPath = path2.fromPoints({ closed: false }, curvePoints)
+    return smoothPath;
   }
-  const smoothPath = path2.fromPoints({ closed: false }, curvePoints)
 
-  const smoothPaths = [
-    smoothPath,
-    translate([0, dp/3, 0],smoothPath),
-    translate([0, -dp/3, 0],smoothPath)
+  
+
+  const points = [
+    [-width / 2, 20 + Math.random() * 5],
+    [-width / 4, Math.random() * 25],
+    [0, Math.random() * 20],
+    [width / 4, Math.random() * 15],
+    [width /2, Math.random() * 10],
+    [width /2, Math.random() * 10],
+    [width / 4, -Math.random() * 15],
+    [0, -Math.random() * 20],
+    [-width / 4, -Math.random() * 25],
+    [-width / 2, -(20 + Math.random() * 5)],
+    [-width / 2, -(20 + Math.random() * 5)]
   ]
 
-  return translate([0,0,thk],smoothPaths);
+  const grains = [
+    createCurve(points),
+  ]
+
+  for(let i = 1; i <= grainNum ; i++){
+    let intervals = i * interval * (1 - i / 50);
+    const pointUppers =[
+      [-width / 2, intervals + 20/i + Math.random() * 30/i],
+      [-width / 4, intervals + Math.random() * 40/i],
+      [0, intervals + Math.random() * 30/i],
+      [ width / 4, intervals + Math.random() * 20/i],
+      [ width / 2, intervals + Math.random() * 10/i],
+      [ width / 2, intervals + Math.random() * 10/i]
+    ]
+    const pointLowers =[
+      [ width / 2, -intervals - Math.random() * 10/i],
+      [ width / 4, -intervals -Math.random() * 20/i],
+      [0, -intervals -Math.random() * 30/i],
+      [-width / 4, -intervals -Math.random() * 40/i],
+      [-width / 2, -intervals -(20/i + Math.random() * 30/i)],
+      [-width / 2, -intervals -(20/i + Math.random() * 30/i)]
+    ]
+    grains.push(createCurve(pointUppers));
+    grains.push(createCurve(pointLowers));
+  }
+
+  return translate([0,0,thk],grains);
 }
 
 //가독성을 위한 라인생성
@@ -503,10 +540,8 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
 
 
 
-
-
 const main = ({
-  glassEn, alpha, alpha2, addSceneEn,color, //개발자
+  glassEn, alpha, alpha2, addSceneEn,color,grainEn,grainAlpha, //개발자
   width, dp, thk, //기본치수
   originEn, //원점
   bottomSlotDist, bottomSlotDp, bottomSlotEn, //밑단홈파기
@@ -636,7 +671,10 @@ const main = ({
   woodScene.push(colorize([0, 0, 0], positionedText));
   woodScene.push(colorize([0, 0, 0], line));
   woodScene.push(colorize([0, 0, 0], dLine));
-  woodScene.push(colorize([0, 0, 0], grain));
+
+  if (grainEn) {
+    woodScene.push(colorize([0, 0, 0, grainAlpha], grain));
+  }
 
   if(addSceneEn){
     addScene.push(colorize([1,0,0,alpha2],addFeature));
