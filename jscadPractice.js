@@ -1,7 +1,7 @@
 const jscad = require('@jscad/modeling')
 const { cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere, torus } = jscad.primitives
 const { subtract, union, intersect} = jscad.booleans
-const { colorize, hslToRgb, colorNameToRgb } = jscad.colors
+const { colorize, hexToRgb, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
 const { geom2 } = jscad.geometries
 const { hullChain } = jscad.hulls
@@ -15,6 +15,9 @@ const getParameterDefinitions = () => [
   //개발자 기능
   { name: 'DEV Mode', type: 'group', caption: '개발자 기능'},
   { name: 'glassEn', type: 'checkbox', caption: '투명모드', checked: false},
+  { name: 'alpha', type: 'number', initial: 0.6, min: 0.1, max: 1, step: 0.1, caption: '투명도 : '},
+  { name: 'addSceneEn', type: 'checkbox', caption: '제거된피쳐표시', checked: false},
+  { name: 'color', type: 'color', initial: '#d4d4d4', caption : '컬러변경'},
   //목재 선택
   { name: 'woodSelection', type: 'group', caption: '목재 선택'},
   { name: 'type', type: 'choice', caption: '목재 종류 :',
@@ -365,7 +368,7 @@ const createCornerHoles = (width, dp, thk) => {
 
 
 const main = ({
-  glassEn,
+  glassEn, alpha, addSceneEn,color, //개발자
   width, dp, thk, //기본치수
   originEn, //원점
   bottomSlotDist, bottomSlotDp, bottomSlotEn, //밑단홈파기
@@ -383,67 +386,72 @@ const main = ({
 }) => {
   const base = createBase(width, dp, thk);
   let modifiedBase = base;
-  let addFeature = base;
+  let addFeature = [];
 
   if (bottomSlotEn) {
     const bottomSlot = createbottomSlot(width, dp, bottomSlotDist, bottomSlotDp, thk);
     modifiedBase = subtract(modifiedBase, bottomSlot);
+    addFeature = union(addFeature,intersect(base,bottomSlot));
   }
   if (thkPocketEn){
     const thkPocket = createThkPocket(width, dp, thk, thkPocketWidth, thkPocketThk);
     modifiedBase = subtract(modifiedBase, thkPocket);
+    addFeature = union(addFeature,intersect(base,thkPocket));
   }
   if (thkSlotEn){
     const thkSlot = createThkSlot(width, dp, thk, thkSlotWidth, thkSlotDp);
     modifiedBase = subtract(modifiedBase, thkSlot);
+    addFeature = union(addFeature,intersect(base,thkSlot));
   }
   if (cornerRoundEn) {
     const cornerRound = createCornerRound (width, dp, thk, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
-    // cornerRound.forEach((createCornerRoundItem) => {
-    //   modifiedBase = subtract(modifiedBase, createCornerRoundItem);
-    // });
     modifiedBase = subtract(modifiedBase, cornerRound);
+    addFeature = union(addFeature,intersect(base,cornerRound));
   }
   if (circleCutEn) {
     const circleCut = createCircleCut(width, dp, thk, circleCutDisX, circleCutDisY, circleCutDia);
     modifiedBase = subtract(modifiedBase, circleCut);
+    addFeature = union(addFeature,intersect(base,circleCut));
   }
   // 원형타공 multi 옵션
   if (circleCutEn) {
     // parameter 배열이면서 요소가 1개 이상 체크
     if (Array.isArray(circleCutArray) && circleCutArray.length > 0) {
       const holeCutMulti = createCircleCutMulti(width, dp, thk, circleCutArray);
-      holeCutMulti.forEach((holeCut) => {
-        modifiedBase = subtract(modifiedBase, holeCut);
-      });
+      // holeCutMulti.forEach((holeCut) => {
+      //   modifiedBase = subtract(modifiedBase, holeCut);
+      // });
     }
   }
   if (squareCutEn) {
     const squareCut = createSquareCut(width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp);
     modifiedBase = subtract(modifiedBase, squareCut);
+    // addFeature = union(base,squareCut);
+    addFeature = union(addFeature,intersect(base,squareCut));
   }
   if (thkAngleCutEn){
     const thkCut = createThkAngleCut(width, dp, thk, thkAngleCutOption);
-    // thkCut.forEach((createThkAngleCutItem) => {
-    //   modifiedBase = subtract(modifiedBase, createThkAngleCutItem);
-    // });
     modifiedBase = subtract(modifiedBase, thkCut);
+    // addFeature = union(base,thkCut);
+    addFeature = union(addFeature,intersect(base,thkCut));
   }
   if (angleCutEn){
     const angleCut = createAngleCut(width, dp, thk, angleCutOption);
-  //   angleCut.forEach((createAngleCutItem) => {
-  //   modifiedBase = subtract(modifiedBase, createAngleCutItem);
-  // });
     modifiedBase = subtract(modifiedBase, angleCut);
+    // addFeature = union(base,angleCut);
+    addFeature = union(addFeature,intersect(base,angleCut));
   }
   if (boringEn) {
     const boringCut = createBoring(width, dp, thk, boringDist);
     modifiedBase = subtract(modifiedBase, boringCut);
+    // addFeature = union(base,boringCut);
+    addFeature = union(addFeature,intersect(base,boringCut));
   }
   if (filletEn) {
     const fillet = createFillet(width, dp, thk, filletOption, cornerRoundEn, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
     modifiedBase = subtract(modifiedBase, fillet);
-    addFeature = fillet;
+    // addFeature = union(base,fillet);
+    addFeature = union(addFeature,intersect(base,fillet));
   }
 
   if (cornerHolesEn) {
@@ -460,18 +468,30 @@ const main = ({
   const woodScene = [];
   const addScene =[];
 
+  var rgba = hexToRgb(color);
+  rgba.push(alpha);
+
+
   if(glassEn){
-    woodScene.push(colorize([0.5, 1, 1, 0.6], modifiedBase));
+    woodScene.push(colorize(rgba, modifiedBase));
   }
   else{
-    woodScene.push(colorize([0.5, 1, 1], modifiedBase));
+    woodScene.push(colorize(hexToRgb(color), modifiedBase));
   }
   if (originEn) {
     woodScene.push(originM)
   }
 
   woodScene.push(colorize([0, 0, 0], positionedText));
-  addScene.push(colorize([1,0,0],addFeature));
+
+
+  if(addSceneEn){
+    addScene.push(colorize([1,0,0],addFeature));
+  }
+  else{
+    const addScene = [];
+  }
+
 
   return [woodScene, addScene];
 }
