@@ -112,7 +112,7 @@ const createBase = (width, dp, thk) => {
 
 //가독성을 위한 라인생성
 const createLine = (width, dp, thk) => {
-  const baseLineLower = line([[-width/2, -dp/2, thk/2], [width/2, -dp/2], [width/2, dp/2],[-width/2, dp/2],[-width/2, -dp/2]])
+  const baseLineLower = line([[-width/2, -dp/2], [width/2, -dp/2], [width/2, dp/2],[-width/2, dp/2],[-width/2, -dp/2]])
   const baseLineUpper = translate([0, 0, thk], baseLineLower)
   const baseLineVerical = [
     translate([-width/2,-dp/2],rotateX(Math.PI/2,line([[0,0],[0,thk]]))),
@@ -127,6 +127,7 @@ const createLine = (width, dp, thk) => {
   ]
   return baseLine;
 }
+
 
 //사이즈 텍스트 생성
 const text = (message, extrusionHeight, characterLineWidth) => {
@@ -145,6 +146,8 @@ const text = (message, extrusionHeight, characterLineWidth) => {
   const message3D = extrudeLinear({ height: extrusionHeight }, message2D)
   return center({ axes: [true, true, false] }, message3D)
 }
+
+//중앙표시 텍스트
 const createSizeText = (width, dp, thk) => {
   const sizeText = `${width}mm X ${dp}mm X ${thk}T`
   const sizeTextStr = sizeText.toString()
@@ -155,6 +158,40 @@ const createSizeText = (width, dp, thk) => {
   sizeText3D = scale([0.5, 0.5, 0.5], sizeText3D)
   sizeText3D = translate([0, 0, 0], sizeText3D)
   return sizeText3D
+}
+
+
+//치수선 라인 생성
+const createDLine = (width, dp, thk) => {
+  const gap = 4;
+  const dLength = thk;
+  const dLineWidth = line([  [-width/2, -dp/2 -gap],[-width/2, -dp/2 -dLength -gap],[width/2, -dp/2 -dLength -gap], [width/2, -dp/2 -gap]])
+  const dLineDp = line([  [-width/2 -gap, -dp/2],[-width/2 - dLength -gap, -dp/2],[-width/2 - dLength -gap, dp/2], [-width/2 -gap, dp/2]]);
+  
+  const widthString = `${width}mm`
+  if (widthString.length === 0) {
+    return []
+  }
+  let widthSizeText = text(widthString.toString(), 2, 1)
+  widthSizeText = scale([0.5, 0.5, 0.5], widthSizeText)
+  widthSizeText = translate([0, -dp/2 - dLength - gap*4, 0], widthSizeText)
+
+  const dpString = `${dp}mm`
+  if (dpString.length === 0) {
+    return []
+  }
+  let dpSizeText = text(dpString.toString(), 2, 1)
+  dpSizeText = scale([0.5, 0.5, 0.5], dpSizeText)
+  dpSizeText = translate([-width /2 -dLength -gap*4 , 0 , 0], rotateZ(-Math.PI/2,dpSizeText))
+
+  const dLine =[
+    dLineWidth, 
+    dLineDp, 
+    widthSizeText,
+    dpSizeText
+  ];
+
+  return dLine;
 }
 
 //원점표시
@@ -531,6 +568,7 @@ const main = ({
   const positionedText = translate([0, 0, thk], sizeText3D);
   const originM = createOrigin(width, dp, thk);
   const line = createLine(width, dp, thk);
+  const dLine = createDLine(width,dp, thk)
 
   const woodScene = [];
   const addScene =[];
@@ -551,6 +589,7 @@ const main = ({
 
   woodScene.push(colorize([0, 0, 0], positionedText));
   woodScene.push(colorize([0, 0, 0], line));
+  woodScene.push(colorize([0, 0, 0], dLine));
 
   if(addSceneEn){
     addScene.push(colorize([1,0,0,alpha2],addFeature));
