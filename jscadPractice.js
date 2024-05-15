@@ -14,7 +14,7 @@ const options = { segments: 32 }
 const getParameterDefinitions = () => [
   //개발자 기능
   { name: 'DEV Mode', type: 'group', caption: '개발자 기능'},
-  { name: 'glassEn', type: 'checkbox', caption: '투명모드', checked: false},
+  { name: 'glassEn', type: 'checkbox', caption: '투명모드', checked: true},
   { name: 'alpha', type: 'number', initial: 0.9, min: 0.1, max: 1, step: 0.1, caption: '투명도 : '},
   { name: 'addSceneEn', type: 'checkbox', caption: '제거된피쳐표시', checked: false},
   { name: 'color', type: 'color', initial: '#d4d4d4', caption : '컬러변경'},
@@ -110,9 +110,16 @@ const createBase = (width, dp, thk) => {
 const createLine = (width, dp, thk) => {
   const baseLineLower = line([[-width/2, -dp/2, thk/2], [width/2, -dp/2], [width/2, dp/2],[-width/2, dp/2],[-width/2, -dp/2]])
   const baseLineUpper = translate([0, 0, thk], baseLineLower)
+  const baseLineVerical = [
+    translate([-width/2,-dp/2],rotateX(Math.PI/2,line([[0,0],[0,thk]]))),
+    translate([ width/2,-dp/2],rotateX(Math.PI/2,line([[0,0],[0,thk]]))),
+    translate( [width/2, dp/2],rotateX(Math.PI/2,line([[0,0],[0,thk]]))),
+    translate([-width/2, dp/2],rotateX(Math.PI/2,line([[0,0],[0,thk]])))
+  ]
   const baseLine = [
     baseLineUpper,
-    baseLineLower
+    baseLineLower,
+    baseLineVerical
   ]
   return baseLine;
 }
@@ -497,7 +504,7 @@ const main = ({
   woodScene.push(colorize([0, 0, 0], line));
 
   if(addSceneEn){
-    addScene.push(colorize([1,0,0],addFeature));
+    addScene.push(colorize([1,0,0,0.6],addFeature));
   }
   else{
     const addScene = [];
