@@ -17,6 +17,7 @@ const getParameterDefinitions = () => [
   { name: 'glassEn', type: 'checkbox', caption: '투명모드', checked: true},
   { name: 'alpha', type: 'number', initial: 0.9, min: 0.1, max: 1, step: 0.1, caption: '투명도 : '},
   { name: 'addSceneEn', type: 'checkbox', caption: '제거된피쳐표시', checked: false},
+  { name: 'alpha2', type: 'number', initial: 1, min: 0.1, max: 1, step: 0.1, caption: '제거된피쳐 투명도 : '},
   { name: 'color', type: 'color', initial: '#d4d4d4', caption : '컬러변경'},
   //목재 선택
   { name: 'woodSelection', type: 'group', caption: '목재 선택'},
@@ -40,8 +41,6 @@ const getParameterDefinitions = () => [
   },
   //원점표시
   { name: 'originEn', type: 'checkbox', caption: '원점 표시', checked: true }, 
-
-  //후가공 추가
   //밑단홈파기
   { name: 'bottomSlot', type: 'group', caption: '밑단홈파기'},
   { name: 'bottomSlotEn', type: 'checkbox', caption: '밑단홈파기적용', checked: false },
@@ -98,15 +97,20 @@ const getParameterDefinitions = () => [
   { name: 'filletOption',type: 'radio', caption: 'Radio Buttons:', values: ['both', 'upper', 'lower' ],
   captions: ['모두', '위쪽', '아래쪽'], initial: 'both' },
   //피스타공
-  { name: 'conuterSink', type: 'group', caption: '피스타공'},
-  { name: 'cornerHolesEn', type:'checkbox', caption:'피스타공적용', checked: false}
+  { name: 'counterSink', type: 'group', caption: '피스타공'},
+  { name: 'counterSinkEn', type:'checkbox', caption:'피스타공적용', checked: false},
+  { name: 'counterSinkAEn', type:'checkbox', caption:'A-A 모서리', checked: true},
+  { name: 'counterSinkBEn', type:'checkbox', caption:'B 모서리', checked: false},
+  { name: 'counterSinkCEn', type:'checkbox', caption:'C 모서리', checked: false}
 ]
 
+//베이스판 생성
 const createBase = (width, dp, thk) => {
   const base = cuboid({ size: [width, dp, thk] })
   return translate([0, 0, thk / 2], base)
 }
 
+//가독성을 위한 라인생성
 const createLine = (width, dp, thk) => {
   const baseLineLower = line([[-width/2, -dp/2, thk/2], [width/2, -dp/2], [width/2, dp/2],[-width/2, dp/2],[-width/2, -dp/2]])
   const baseLineUpper = translate([0, 0, thk], baseLineLower)
@@ -124,6 +128,7 @@ const createLine = (width, dp, thk) => {
   return baseLine;
 }
 
+//사이즈 텍스트 생성
 const text = (message, extrusionHeight, characterLineWidth) => {
   if (message === undefined || message.length === 0) return []
 
@@ -140,7 +145,6 @@ const text = (message, extrusionHeight, characterLineWidth) => {
   const message3D = extrudeLinear({ height: extrusionHeight }, message2D)
   return center({ axes: [true, true, false] }, message3D)
 }
-
 const createSizeText = (width, dp, thk) => {
   const sizeText = `${width}mm X ${dp}mm X ${thk}T`
   const sizeTextStr = sizeText.toString()
@@ -364,28 +368,25 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRa
 
 
 
+//피스타공
+const createCounterSink = (width, dp, thk) => {
+  const head = translate([0, 0, thk-2],cylinder({ radius: 4, height: 4 }));
+  const hole = translate([0, 0, (thk-4)/2],cylinder({ radius: 1.5, height: thk - 4 }));
+  const csf = union(head, hole);
 
-const createCornerHoles = (width, dp, thk) => {
-  const holeRadius = 2; // 피스타공 4mm
-  const hole = circle({ radius: holeRadius, segments: 64 });
-  const hole3D = extrudeLinear({ height: thk*2 }, hole) // 박스를 완전히 관통하기 위해 두께보다 더 높게 설정}
-
-
-  // 네 모서리에 구멍을 위치시킵니다.
-  const holes = [
-    translate([-width/2 + 10, dp/2 -10, 0], hole3D),
-    translate([-width/2 + 10, -dp/2 +10, 0], hole3D),
-    translate([width/2 - 10, dp/2 -10, 0], hole3D),
-    translate([width/2 - 10, -dp/2 +10, 0], hole3D)
+  const counterSinks = [
+    translate([width/2-thk/2, dp/2 - thk/2, 0],csf)
   ];
 
-  return holes;
+  return counterSinks;
 }
 
 
 
+
+
 const main = ({
-  glassEn, alpha, addSceneEn,color, //개발자
+  glassEn, alpha, alpha2, addSceneEn,color, //개발자
   width, dp, thk, //기본치수
   originEn, //원점
   bottomSlotDist, bottomSlotDp, bottomSlotEn, //밑단홈파기
@@ -396,9 +397,9 @@ const main = ({
   squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
   thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
   angleCutOption, angleCutEn, //액자커팅
+  boringDist, boringEn, //씽크대보링
   filletOption, filletEn, //절단면라운딩
-  boringDist, boringEn,
-  cornerHolesEn,
+  counterSinkEn, counterSinkAEn, counterSinkBEn, counterSinkCEn, //피스타공
   circleCutArray
 }) => {
   const base = createBase(width, dp, thk);
@@ -471,9 +472,11 @@ const main = ({
     addFeature = union(addFeature,intersect(base,fillet));
   }
 
-  if (cornerHolesEn) {
-    const cornerHoles = createCornerHoles(width, dp, thk);
-    modifiedBase = cornerHoles.reduce((acc, hole) => subtract(acc, hole), modifiedBase);
+  if (counterSinkEn) {
+    const counterSink = createCounterSink(width, dp, thk);
+    modifiedBase = subtract(modifiedBase, counterSink);
+    // addFeature = union(base,counterSink);
+    addFeature = union(addFeature,intersect(base,counterSink));
   }
 
 
@@ -504,7 +507,7 @@ const main = ({
   woodScene.push(colorize([0, 0, 0], line));
 
   if(addSceneEn){
-    addScene.push(colorize([1,0,0,0.6],addFeature));
+    addScene.push(colorize([1,0,0,alpha2],addFeature));
   }
   else{
     const addScene = [];
