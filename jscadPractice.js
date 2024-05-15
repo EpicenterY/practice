@@ -1,6 +1,6 @@
 const jscad = require('@jscad/modeling')
 const { cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere, torus } = jscad.primitives
-const { subtract, union } = jscad.booleans
+const { subtract, union, intersect} = jscad.booleans
 const { colorize, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
 const { geom2 } = jscad.geometries
@@ -12,6 +12,9 @@ const { translate, scale, rotateX, rotateY, rotateZ, center } = jscad.transforms
 const options = { segments: 32 }
 
 const getParameterDefinitions = () => [
+  //개발자 기능
+  { name: 'DEV Mode', type: 'group', caption: '개발자 기능'},
+  { name: 'glassEn', type: 'checkbox', caption: '투명모드', checked: false},
   //목재 선택
   { name: 'woodSelection', type: 'group', caption: '목재 선택'},
   { name: 'type', type: 'choice', caption: '목재 종류 :',
@@ -249,7 +252,7 @@ const createBoring = (width, dp, thk, boringDist) => {
 
 //절단면라운딩
 const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn) =>{
-  const filletRadius = 4
+  const filletRadius = 6
   const edgeCylinderWidth = cylinder({radius : filletRadius, height : width});
   const edgeCuboidWidth = translate([filletRadius / 2, filletRadius / 2, 0],cuboid({size : [filletRadius, filletRadius, width]}))
   const linearFilletWidth = subtract(edgeCuboidWidth, edgeCylinderWidth);
@@ -301,21 +304,40 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRa
     fillet.push(linearFilletLower);
     if(cornerRoundEn){
       if(cornerRoundAEn){
-        fillet.push( roundFilletLower[3] ); // A
+        fillet.push( roundFilletLower[0] ); // A
       }
       if(cornerRoundBEn){
-        fillet.push( roundFilletLower[2] ); // B
+        fillet.push( roundFilletLower[1] ); // B
       }
       if(cornerRoundCEn){
-        fillet.push( roundFilletLower[0] ); // C
+        fillet.push( roundFilletLower[3] ); // C
       }
       if(cornerRoundDEn){
-        fillet.push( roundFilletLower[1] ); // D
+        fillet.push( roundFilletLower[2] ); // D
       }
     }
   }
   if(filletOption === 'both'){
-    
+    fillet.push(linearFilletUpper);
+    fillet.push(linearFilletLower);
+    if(cornerRoundEn){
+      if(cornerRoundAEn){
+        fillet.push(translate([-width / 2 + cornerRoundRadius,  dp / 2 - cornerRoundRadius, thk - filletRadius], rotateZ( Math.PI / 2 , roundEdgeCut))); // A
+        fillet.push( roundFilletLower[0] ); // A
+      }
+      if(cornerRoundBEn){
+        fillet.push(translate([-width / 2 + cornerRoundRadius, -dp / 2 + cornerRoundRadius, thk - filletRadius], rotateZ(-Math.PI , roundEdgeCut))); // B
+        fillet.push( roundFilletLower[1] ); // B
+      }
+      if(cornerRoundCEn){
+        fillet.push(translate([ width / 2 - cornerRoundRadius,  dp / 2 - cornerRoundRadius, thk - filletRadius], roundEdgeCut)); // C
+        fillet.push( roundFilletLower[3] ); // C
+      }
+      if(cornerRoundDEn){
+        fillet.push(translate([ width / 2 - cornerRoundRadius, -dp / 2 + cornerRoundRadius, thk - filletRadius], rotateZ(-Math.PI / 2 , roundEdgeCut))); // D
+        fillet.push( roundFilletLower[2] ); // D
+      }
+    }
   }
   return fillet;
 }
@@ -343,6 +365,7 @@ const createCornerHoles = (width, dp, thk) => {
 
 
 const main = ({
+  glassEn,
   width, dp, thk, //기본치수
   originEn, //원점
   bottomSlotDist, bottomSlotDp, bottomSlotEn, //밑단홈파기
@@ -360,6 +383,7 @@ const main = ({
 }) => {
   const base = createBase(width, dp, thk);
   let modifiedBase = base;
+  let addFeature = base;
 
   if (bottomSlotEn) {
     const bottomSlot = createbottomSlot(width, dp, bottomSlotDist, bottomSlotDp, thk);
@@ -418,7 +442,8 @@ const main = ({
   }
   if (filletEn) {
     const fillet = createFillet(width, dp, thk, filletOption, cornerRoundEn, cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn);
-    modifiedBase = union(modifiedBase, fillet);
+    modifiedBase = subtract(modifiedBase, fillet);
+    addFeature = fillet;
   }
 
   if (cornerHolesEn) {
@@ -428,23 +453,27 @@ const main = ({
 
 
 
-
-
-
   const sizeText3D = createSizeText(width, dp, thk);
   const positionedText = translate([0, 0, thk], sizeText3D);
   const originM = createOrigin(width, dp, thk);
 
   const woodScene = [];
+  const addScene =[];
 
-  woodScene.push(colorize([0.5, 1, 1], modifiedBase));
-  woodScene.push(colorize([0, 0, 0], positionedText));
-
+  if(glassEn){
+    woodScene.push(colorize([0.5, 1, 1, 0.6], modifiedBase));
+  }
+  else{
+    woodScene.push(colorize([0.5, 1, 1], modifiedBase));
+  }
   if (originEn) {
     woodScene.push(originM)
   }
 
-  return woodScene;
+  woodScene.push(colorize([0, 0, 0], positionedText));
+  addScene.push(colorize([1,0,0],addFeature));
+
+  return [woodScene, addScene];
 }
 
 module.exports = { main, getParameterDefinitions }
