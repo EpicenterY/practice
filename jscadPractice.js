@@ -260,10 +260,10 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRa
   const edgeCuboidDepth = translate([filletRadius / 2, filletRadius / 2, 0],cuboid({size : [filletRadius, filletRadius, dp]}))
   const linearFilletDepth = subtract(edgeCuboidDepth, edgeCylinderDepth);
   const linearFilletUpper = [
-    translate([-width / 2 + filletRadius, 0, thk - filletRadius], rotateZ( Math.PI, rotateX(Math.PI / 2, linearFilletWidth))),
-    translate([ width / 2 - filletRadius, 0, thk - filletRadius], rotateX( Math.PI / 2, linearFilletWidth)),
-    translate([ 0, dp / 2 - filletRadius, thk - filletRadius], rotateY(-Math.PI / 2, linearFilletDepth)),
-    translate([ 0, -width / 2 + filletRadius, thk - filletRadius], rotateZ(-Math.PI / 2, rotateX(Math.PI / 2, linearFilletDepth)))
+    translate([-width / 2 + filletRadius, 0, thk - filletRadius], rotateZ( Math.PI, rotateX(Math.PI / 2, linearFilletDepth))),
+    translate([ width / 2 - filletRadius, 0, thk - filletRadius], rotateX( Math.PI / 2, linearFilletDepth)),
+    translate([ 0,  dp / 2 - filletRadius, thk - filletRadius], rotateY(-Math.PI / 2, linearFilletWidth)),
+    translate([ 0, -dp / 2 + filletRadius, thk - filletRadius], rotateZ(-Math.PI / 2, rotateX(Math.PI / 2, linearFilletWidth)))
   ];
   const linearFilletLower = translate([0,0, thk],rotateY(Math.PI , linearFilletUpper));
 
