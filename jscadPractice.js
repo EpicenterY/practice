@@ -32,7 +32,7 @@ const getParameterDefinitions = () => [
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
     initial: '15'
   },
-  { name: 'width', type: 'int', initial: 350, caption: '길이(결방향) :' },
+  { name: 'width', type: 'int', initial: 450, caption: '길이(결방향) :' },
   { name: 'dp', type: 'int', initial: 250, caption: '폭 :' },
   { name: 'quantity', type: 'int', caption: '주문수량 :',
     values: [4.5, 15, 18, 24, 30],
@@ -44,13 +44,13 @@ const getParameterDefinitions = () => [
   //밑단홈파기
   { name: 'bottomSlot', type: 'group', caption: '밑단홈파기'},
   { name: 'bottomSlotEn', type: 'checkbox', caption: '밑단홈파기적용', checked: false },
-  { name: 'bottomSlotDist', type: 'int', initial: 10, caption: '간격 :' },
-  { name: 'bottomSlotDp', type: 'int', initial: 5, caption: '깊이 :' },
+  { name: 'bottomSlotDist', type: 'int', initial: 30, caption: '간격 :' },
+  { name: 'bottomSlotDp', type: 'int', initial: 7, caption: '깊이 :' },
   //두께홈따기
   { name: 'ThkPocket', type: 'group', caption: '두께홈따기'},
   { name: 'thkPocketEn', type: 'checkbox', caption: '두께홈따기적용', checked: false },
   { name: 'thkPocketWidth', type: 'int', initial: 20, caption: '폭 :' },
-  { name: 'thkPocketThk', type: 'int', initial: 10, caption: '깊이 :' },
+  { name: 'thkPocketThk', type: 'int', initial: 2, caption: '깊이 :' },
   //두께홈파기
   { name: 'thkSlot', type: 'group', caption: '두께홈파기'},
   { name: 'thkSlotEn',type:'checkbox',caption:'두께홈파기적용', checked: false },
@@ -67,9 +67,9 @@ const getParameterDefinitions = () => [
   //원형타공 (Circle-cut)
   { name: 'circleCut', type: 'group', caption: '원형타공'},
   { name: 'circleCutEn', type: 'checkbox', caption: '원형타공적용', checked: false },
-  { name: 'circleCutDisX', type: 'int', initial: 100, caption: '가로 간격 :' },
-  { name: 'circleCutDisY', type: 'int', initial: 100, caption: '세로 간격 :' },
-  { name: 'circleCutDia', type: 'int', initial: 35, caption: '원지름 :' },
+  { name: 'circleCutDisX', type: 'int', initial: 30, caption: '가로 간격 :' },
+  { name: 'circleCutDisY', type: 'int', initial: 220, caption: '세로 간격 :' },
+  { name: 'circleCutDia', type: 'int', initial: 30, caption: '원지름 :' },
   //사각타공 (Square-Cut)
   { name: 'squareCut', type: 'group', caption: '사각타공'},
   { name: 'squareCutEn', type: 'checkbox', caption: '사각타공적용', checked: false },
