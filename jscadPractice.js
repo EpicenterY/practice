@@ -405,7 +405,7 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
   
     for (let i = 0; i < numScrews; i++) {
         position = gap + i * interval;
-        counterSinks.push(translate([-width/2+position, -dp/2 + thk/2 , 0],csf));
+        counterSinks.push(translate([-width/2+position, dp/2 - thk/2 , 0],csf));
     }
   }
 
@@ -420,7 +420,7 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
   
     for (let i = 0; i < numScrews; i++) {
         position = gap + i * interval;
-        counterSinks.push(translate([-width/2+position, dp/2 - thk/2 , 0],csf));
+        counterSinks.push(translate([-width/2+position, -dp/2 + thk/2 , 0],csf));
     }
   }
 
