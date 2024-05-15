@@ -1,5 +1,5 @@
 const jscad = require('@jscad/modeling')
-const { cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere, torus } = jscad.primitives
+const {line, cuboid, cylinder, circle, ellipsoid , rectangle, roundedRectangle, sphere, torus } = jscad.primitives
 const { subtract, union, intersect} = jscad.booleans
 const { colorize, hexToRgb, hslToRgb, colorNameToRgb } = jscad.colors
 const { extrudeLinear} = jscad.extrusions
@@ -15,7 +15,7 @@ const getParameterDefinitions = () => [
   //개발자 기능
   { name: 'DEV Mode', type: 'group', caption: '개발자 기능'},
   { name: 'glassEn', type: 'checkbox', caption: '투명모드', checked: false},
-  { name: 'alpha', type: 'number', initial: 0.6, min: 0.1, max: 1, step: 0.1, caption: '투명도 : '},
+  { name: 'alpha', type: 'number', initial: 0.9, min: 0.1, max: 1, step: 0.1, caption: '투명도 : '},
   { name: 'addSceneEn', type: 'checkbox', caption: '제거된피쳐표시', checked: false},
   { name: 'color', type: 'color', initial: '#d4d4d4', caption : '컬러변경'},
   //목재 선택
@@ -31,8 +31,8 @@ const getParameterDefinitions = () => [
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
     initial: '15'
   },
-  { name: 'width', type: 'int', initial: 300, caption: '길이(결방향) :' },
-  { name: 'dp', type: 'int', initial: 300, caption: '폭 :' },
+  { name: 'width', type: 'int', initial: 350, caption: '길이(결방향) :' },
+  { name: 'dp', type: 'int', initial: 250, caption: '폭 :' },
   { name: 'quantity', type: 'int', caption: '주문수량 :',
     values: [4.5, 15, 18, 24, 30],
     captions: ['4.5mm', '15mm', '18mm', '24mm', '30mm'],
@@ -105,6 +105,16 @@ const getParameterDefinitions = () => [
 const createBase = (width, dp, thk) => {
   const base = cuboid({ size: [width, dp, thk] })
   return translate([0, 0, thk / 2], base)
+}
+
+const createLine = (width, dp, thk) => {
+  const baseLineLower = line([[-width/2, -dp/2, thk/2], [width/2, -dp/2], [width/2, dp/2],[-width/2, dp/2],[-width/2, -dp/2]])
+  const baseLineUpper = translate([0, 0, thk], baseLineLower)
+  const baseLine = [
+    baseLineUpper,
+    baseLineLower
+  ]
+  return baseLine;
 }
 
 const text = (message, extrusionHeight, characterLineWidth) => {
@@ -464,6 +474,7 @@ const main = ({
   const sizeText3D = createSizeText(width, dp, thk);
   const positionedText = translate([0, 0, thk], sizeText3D);
   const originM = createOrigin(width, dp, thk);
+  const line = createLine(width, dp, thk);
 
   const woodScene = [];
   const addScene =[];
@@ -483,7 +494,7 @@ const main = ({
   }
 
   woodScene.push(colorize([0, 0, 0], positionedText));
-
+  woodScene.push(colorize([0, 0, 0], line));
 
   if(addSceneEn){
     addScene.push(colorize([1,0,0],addFeature));
