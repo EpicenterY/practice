@@ -703,7 +703,7 @@ const main = ({
   }
 
   if(addSceneEn){
-    addScene.push(colorize([1,0,0,alpha2],addFeature));
+    addScene.push(colorize([0,0.47,1,alpha2],addFeature));
   }
   else{
     const addScene = [];
