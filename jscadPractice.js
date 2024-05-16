@@ -273,8 +273,8 @@ const createDLine = (width, dp, thk) => {
 
 //원점표시
 const createOrigin = (width, dp, thk) => {
-  const originSphere = colorize([1,0,0],sphere({radius : 2, segment : options.segments}))
-  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 4, segment : options.segments}))
+  const originSphere = colorize([1,0,0],sphere({radius : 3, segment : options.segments}))
+  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 6, segment : options.segments}))
   const origin = translate([-width/2, -dp/2, thk],[originSphere,originBigSphere])
   return origin
 }
