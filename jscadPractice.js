@@ -47,7 +47,7 @@ const getParameterDefinitions = () => [
   //밑단홈파기
   { name: 'bottomSlot', type: 'group', caption: '밑단홈파기'},
   { name: 'bottomSlotEn', type: 'checkbox', caption: '밑단홈파기적용', checked: false },
-  { name: 'bottomSlotDist', type: 'int', initial: 30, caption: '간격 :' },
+  { name: 'bottomSlotDist', type: 'int', initial: 50, caption: '간격 :' },
   { name: 'bottomSlotDp', type: 'int', initial: 7, caption: '깊이 :' },
   //두께홈따기
   { name: 'ThkPocket', type: 'group', caption: '두께홈따기'},
@@ -80,6 +80,9 @@ const getParameterDefinitions = () => [
   { name: 'squareCutDisY', type: 'int', initial: 205, caption: '세로 간격 :' },
   { name: 'rectWidth', type: 'int', initial: 30, caption: '길이 :' },
   { name: 'rectDp', type: 'int', initial: 30, caption: '폭 :' },
+  //원형커팅
+  { name: 'circleOutCut', type: 'group', caption: '원형커팅'},
+  { name: 'circleOutCutEn', type: 'checkbox', caption: '원형커팅적용', checked: false },
   //모서리사선커팅
   { name: 'thkAngleCut', type: 'group', caption: '모서리사선커팅'},
   { name: 'thkAngleCutEn',type:'checkbox',caption:'모서리사선커팅적용', checked: false },
@@ -109,7 +112,7 @@ const getParameterDefinitions = () => [
 
 //베이스판 생성
 const createBase = (width, dp, thk) => {
-  const base = cuboid({ size: [width, dp, thk] })
+  const base = cuboid({ size: [width, dp, thk], segment: options.segments})
   return translate([0, 0, thk / 2], base)
 }
 
@@ -224,7 +227,7 @@ const text = (message, extrusionHeight, characterLineWidth) => {
 // }
 //중앙표시 텍스트(수정)
 const createSizeText = (width, dp, thk) => {
-  const sizeText = `${thk}T`
+  const sizeText = `${thk}mm`
   const sizeTextStr = sizeText.toString()
   if (sizeText.length === 0) {
     return []
@@ -270,8 +273,8 @@ const createDLine = (width, dp, thk) => {
 
 //원점표시
 const createOrigin = (width, dp, thk) => {
-  const originSphere = colorize([1,0,0],sphere({radius : 2, segment : 32}))
-  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 4, segment : 128}))
+  const originSphere = colorize([1,0,0],sphere({radius : 2, segment : options.segments}))
+  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 4, segment : options.segments}))
   const origin = translate([-width/2, -dp/2, thk],[originSphere,originBigSphere])
   return origin
 }
@@ -301,7 +304,7 @@ const createCornerRound = (width, dp, thk, cornerRoundRadius, cornerRoundAEn, co
   const cylinder = circle({radius : cornerRoundRadius, center: [-cornerRoundRadius, -cornerRoundRadius],
      segment: options.segments})
   const cylinder3D = extrudeLinear({height : thk}, cylinder)
-  const roundBox = rectangle({size : [cornerRoundRadius*2, cornerRoundRadius*2]});
+  const roundBox = rectangle({size : [cornerRoundRadius*2, cornerRoundRadius*2],segment: options.segments});
   const roundBox3D = extrudeLinear({height : thk}, roundBox)
   const cornerCutBox = subtract(roundBox3D, cylinder3D)
   const cornerCutBoxs = [];
@@ -326,16 +329,16 @@ const createCircleCut = (width, dp, thk, circleCutDisX, circleCutDisY, circleCut
   const circleCut3D = extrudeLinear({ height: thk*2 }, circleCut)
   return circleCut3D
 }
-const createCircleCutMulti = (width, dp, thk, circleCutArray) => {
-  const hole3DMulti = [];
-  // parameter가 배열로 넘어왔을때
-  circleCutArray.forEach((el) => {
-    let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutDisX, el.circleCutDisY], segments: options.segments });
-    let hole3D = extrudeLinear({ height: thk*2 }, hole);
-    hole3DMulti.push(hole3D);
-  });
-  return hole3DMulti;
-}
+// const createCircleCutMulti = (width, dp, thk, circleCutArray) => {
+//   const hole3DMulti = [];
+//   // parameter가 배열로 넘어왔을때
+//   circleCutArray.forEach((el) => {
+//     let hole =  circle({ radius: el.circleCutDiameter / 2, center: [el.circleCutDisX, el.circleCutDisY], segments: options.segments });
+//     let hole3D = extrudeLinear({ height: thk*2 }, hole);
+//     hole3DMulti.push(hole3D);
+//   });
+//   return hole3DMulti;
+// }
 
 //사각타공
 const createSquareCut = (width, dp, thk, squareCutDisX, squareCutDisY, rectWidth, rectDp) => {
@@ -343,6 +346,23 @@ const createSquareCut = (width, dp, thk, squareCutDisX, squareCutDisY, rectWidth
   const rect3D = extrudeLinear({ height: thk }, rect);
   return translate([-width / 2 + squareCutDisX + rectWidth / 2, - dp / 2 + squareCutDisY + rectDp / 2, 0], rect3D);
 }
+
+//원형컷팅
+const createCircleOutCut = (width, dp, thk) => {
+  let cornerCutBox;
+  if (width === dp) {
+    const cylinder = circle({radius: (width - 10) / 2, center: [0, 0], segments: options.segments});
+    const cylinder3D = extrudeLinear({height: thk}, cylinder);
+    const roundBox = rectangle({size: [width, dp], segments: options.segments});
+    const roundBox3D = extrudeLinear({height: thk}, roundBox);
+    cornerCutBox = subtract(roundBox3D, cylinder3D);
+  } else {
+    cornerCutBox = [];
+  }
+ 
+  return cornerCutBox;
+};
+
 
 //모서리사선커팅
 const createThkAngleCut = (width, dp, thk, thkAngleCutOption) =>{
@@ -550,6 +570,7 @@ const main = ({
   cornerRoundRadius, cornerRoundAEn, cornerRoundBEn, cornerRoundCEn, cornerRoundDEn, cornerRoundEn, //모서리라운딩
   circleCutDisX, circleCutDisY, circleCutDia, circleCutEn, //원형타공
   squareCutDisX, squareCutDisY, rectWidth, rectDp, squareCutEn, //사각타공
+  circleOutCutEn, //원형컷팅
   thkAngleCutOption, thkAngleCutEn, //모서리사선커팅
   angleCutOption, angleCutEn, //액자커팅
   boringDist, boringEn, //씽크대보링
@@ -595,6 +616,11 @@ const main = ({
     // addFeature = union(base,squareCut);
     addFeature = union(addFeature,intersect(base,squareCut));
   }
+  if (circleOutCutEn) {
+    const circleOutCut = createCircleOutCut(width, dp, thk);
+    modifiedBase = subtract(modifiedBase , circleOutCut);
+    addFeature = union(addFeature,intersect(base,circleOutCut));
+  }
   if (thkAngleCutEn){
     const thkCut = createThkAngleCut(width, dp, thk, thkAngleCutOption);
     modifiedBase = subtract(modifiedBase, thkCut);
@@ -624,14 +650,14 @@ const main = ({
     modifiedBase = subtract(modifiedBase, fillet);
     // addFeature = union(base,fillet);
     // fix: 제거된 피처표시 미노출 수정 :: ggybbo
-    fillet.forEach((filletItem) => {
-      // fix: 모서리라운딩과 동시 적용시 filletItem 갯수가 0이거나 Array type이 아닌 경우가 존재, 이유는 상상이 되지 않음 :: ggybbo
-      if (Array.isArray(filletItem) && filletItem.length > 0) {
-        filletItem.forEach((filletItemEach) => {
-          addFeature = union(addFeature,intersect(base,filletItemEach));
-        })
-      }
-    });
+    // fillet.forEach((filletItem) => {
+    //   // fix: 모서리라운딩과 동시 적용시 filletItem 갯수가 0이거나 Array type이 아닌 경우가 존재, 이유는 상상이 되지 않음 :: ggybbo
+    //   if (Array.isArray(filletItem) && filletItem.length > 0) {
+    //     filletItem.forEach((filletItemEach) => {
+    //       addFeature = union(addFeature,intersect(base,filletItemEach));
+    //     })
+    //   }
+    // });
   }
 
   if (counterSinkEn) {
