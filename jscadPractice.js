@@ -506,7 +506,7 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
   const csf = union(head, hole);
   
   const gap = 30;
-  const minDist = 100;
+  const minDist = 300;
   const counterSinks =[];
   
   if(counterSinkAEn){
@@ -515,11 +515,17 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
         throw new Error("Total length is too short to place screws with the given gap.");
     }
     const usableLength = totalLength - 2 * gap;
-    const numScrews = Math.floor(usableLength / minDist) + 1;
-    const interval = usableLength / (numScrews - 1);
+    const numScrews = Math.floor(usableLength / minDist)+2;
+    const numMidScrews = numScrews - 2;
+    const interval = usableLength / (numScrews -1);
+
+    counterSinks.push(translate([-width/2 + thk/2, -dp/2 + gap , 0],csf));
+    counterSinks.push(translate([ width/2 - thk/2, -dp/2 + gap , 0],csf));
+    counterSinks.push(translate([-width/2 + thk/2, +dp/2 - gap , 0],csf));
+    counterSinks.push(translate([ width/2 - thk/2, +dp/2 - gap , 0],csf));
   
-    for (let i = 0; i < numScrews; i++) {
-        position = gap + i * interval;
+    for (let i = 0; i < numMidScrews; i++) {
+        position = gap + (i+1) * interval;
         counterSinks.push(translate([-width/2 + thk/2, -dp/2 + position , 0],csf));
         counterSinks.push(translate([ width/2 - thk/2, -dp/2 + position , 0],csf));
     }
@@ -531,11 +537,15 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
         throw new Error("Total length is too short to place screws with the given gap.");
     }
     const usableLength = totalLength - 2 * gap;
-    const numScrews = Math.floor(usableLength / minDist) + 1;
-    const interval = usableLength / (numScrews - 1);
+    const numScrews = Math.floor(usableLength / minDist)+2;
+    const numMidScrews = numScrews - 2;
+    const interval = usableLength / (numScrews -1);
+
+    counterSinks.push(translate([-width/2 +gap, dp/2 - thk/2 , 0],csf));
+    counterSinks.push(translate([ width/2 -gap, dp/2 - thk/2 , 0],csf));
   
-    for (let i = 0; i < numScrews; i++) {
-        position = gap + i * interval;
+    for (let i = 0; i < numMidScrews; i++) {
+        position = gap + (i+1) * interval;
         counterSinks.push(translate([-width/2+position, dp/2 - thk/2 , 0],csf));
     }
   }
@@ -546,11 +556,15 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
         throw new Error("Total length is too short to place screws with the given gap.");
     }
     const usableLength = totalLength - 2 * gap;
-    const numScrews = Math.floor(usableLength / minDist) + 1;
-    const interval = usableLength / (numScrews - 1);
+    const numScrews = Math.floor(usableLength / minDist)+2;
+    const numMidScrews = numScrews - 2;
+    const interval = usableLength / (numScrews -1);
+
+    counterSinks.push(translate([-width/2 +gap, -dp/2 + thk/2 , 0],csf));
+    counterSinks.push(translate([ width/2 -gap, -dp/2 + thk/2 , 0],csf));
   
-    for (let i = 0; i < numScrews; i++) {
-        position = gap + i * interval;
+    for (let i = 0; i < numMidScrews; i++) {
+        position = gap + (i+1) * interval;
         counterSinks.push(translate([-width/2+position, -dp/2 + thk/2 , 0],csf));
     }
   }
