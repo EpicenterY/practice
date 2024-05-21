@@ -509,7 +509,7 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRa
 
 
 
-//피스타공
+//피스타공 로직 수정
 const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, counterSinkCEn) => {
   const head = translate([0, 0, thk-2],cylinder({ radius: 4, height: 4 }));
   const hole = translate([0, 0, (thk-4)/2],cylinder({ radius: 1.5, height: thk - 4 }));
