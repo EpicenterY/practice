@@ -29,6 +29,8 @@ const getParameterDefinitions = () => [
     captions: ['미송집성목', '삼나무집성목', '멀바우집성목', '아카시아집성목', '스프러스집성목'],
     initial: '1'
   },
+  //목봉 옵션
+  { name: 'dowelRodEn', type: 'checkbox', caption: '목봉타입', checked: true},
   //목재 크기설정
   { name: 'thk', type: 'choice', caption: '목재 두께 :',
     values: [4.5, 15, 18, 24, 30],
@@ -113,7 +115,15 @@ const getParameterDefinitions = () => [
 //베이스판 생성
 const createBase = (width, dp, thk) => {
   const base = cuboid({ size: [width, dp, thk], segment: options.segments})
+
   return translate([0, 0, thk / 2], base)
+}
+
+//목봉 생성
+const createDowelRod = (width, dp) => {
+    const dowelRodBase = cylinder({radius : dp/2, height : width})
+
+    return translate([0,0,dp / 2],rotateY([Math.PI/2],dowelRodBase))
 }
 
 //결방향 표시
@@ -577,6 +587,7 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
 const main = ({
   glassEn, alpha, alpha2, addSceneEn,color,grainEn,grainAlpha, //개발자
   width, dp, thk, //기본치수
+  dowelRodEn, //목봉
   originEn, //원점
   bottomSlotDist, bottomSlotDp, bottomSlotEn, //밑단홈파기
   thkPocketWidth, thkPocketThk, thkPocketEn, //두께홈따기
@@ -592,7 +603,16 @@ const main = ({
   counterSinkEn, counterSinkAEn, counterSinkBEn, counterSinkCEn, //피스타공
   circleCutArray
 }) => {
-  const base = createBase(width, dp, thk);
+  let base;
+
+  if(dowelRodEn){
+    thk = dp;
+    base = createDowelRod(width, dp);
+  }
+  else{
+    base = createBase(width, dp, thk);
+  }
+
   let modifiedBase = base;
   let addFeature = [];
 
@@ -713,7 +733,13 @@ const main = ({
   woodScene.push(colorize([0, 0, 0], dLine));
 
   if (grainEn) {
-    woodScene.push(colorize([0, 0, 0, grainAlpha], grain));
+    if (dowelRodEn){
+      
+    }
+    else{
+      woodScene.push(colorize([0, 0, 0, grainAlpha], grain));
+    }
+   
   }
 
   if(addSceneEn){
