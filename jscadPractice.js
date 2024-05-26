@@ -205,7 +205,7 @@ const createLine = (width, dp, thk) => {
 }
 
 
-//사이즈 텍스트 생성
+//텍스트 생성
 const text = (message, extrusionHeight, characterLineWidth) => {
   if (message === undefined || message.length === 0) return []
 
@@ -236,46 +236,72 @@ const text = (message, extrusionHeight, characterLineWidth) => {
 //   return sizeText3D
 // }
 //중앙표시 텍스트(수정)
-const createSizeText = (width, dp, thk) => {
-  const sizeText = `${thk}mm`
-  const sizeTextStr = sizeText.toString()
-  if (sizeText.length === 0) {
-    return []
+// const createSizeText = (width, dp, thk) => {
+//   const sizeText = `${thk}mm`
+//   const sizeTextStr = sizeText.toString()
+//   if (sizeText.length === 0) {
+//     return []
+//   }
+//   let sizeText3D = text(sizeText.toString(), 2, 1)
+//   sizeText3D = translate([0, 0, 0], sizeText3D)
+//   return sizeText3D
+// }
+
+//스케일 정리
+const checkScale = (width, dp) =>{
+  let scaleNum = 1 ;
+  const scaleLength = 500;
+  
+  if (width >= dp){
+    scaleNum = width / scaleLength;
   }
-  let sizeText3D = text(sizeText.toString(), 2, 1)
-  sizeText3D = translate([0, 0, 0], sizeText3D)
-  return sizeText3D
+  else{
+    scaleNum = dp / scaleLength;
+  }
+  return scaleNum;
 }
 
 
 //치수선 라인 생성
 const createDLine = (width, dp, thk) => {
-  const gap = 4;
-  const dLength = thk;
+
+  let scaleFactor = checkScale(width,dp)
+  const gap = 4 * scaleFactor;
+  const dLength = thk * scaleFactor;
+  const thkText = `${thk}mm`
+  if (thkText.length === 0) {
+    return []
+  }
+  let thkText3D = text(thkText.toString(), 2, 2)
+  thkText3D = scale([scaleFactor*1.2, scaleFactor*1.2, scaleFactor*1.2], thkText3D)
+  thkText3D = translate([0, 0, thk], thkText3D)
+  
   const dLineWidth = line([  [-width/2, -dp/2 -gap],[-width/2, -dp/2 -dLength -gap],[width/2, -dp/2 -dLength -gap], [width/2, -dp/2 -gap]])
   const dLineDp = line([  [-width/2 -gap, -dp/2],[-width/2 - dLength -gap, -dp/2],[-width/2 - dLength -gap, dp/2], [-width/2 -gap, dp/2]]);
-  
+
+
   const widthString = `${width}mm`
   if (widthString.length === 0) {
     return []
   }
-  let widthSizeText = text(widthString.toString(), 2, 1)
-  widthSizeText = scale([0.5, 0.5, 0.5], widthSizeText)
-  widthSizeText = translate([0, -dp/2 - dLength - gap*4, 0], widthSizeText)
+  let widthSizeText = text(widthString.toString(), 2, 2)
+  widthSizeText = scale([scaleFactor, scaleFactor, scaleFactor], widthSizeText)
+  widthSizeText = translate([0, -dp/2 - dLength - gap*6, 0], widthSizeText)
 
   const dpString = `${dp}mm`
   if (dpString.length === 0) {
     return []
   }
-  let dpSizeText = text(dpString.toString(), 2, 1)
-  dpSizeText = scale([0.5, 0.5, 0.5], dpSizeText)
-  dpSizeText = translate([-width /2 -dLength -gap*4 , 0 , 0], rotateZ(-Math.PI/2,dpSizeText))
+  let dpSizeText = text(dpString.toString(), 2, 2)
+  dpSizeText = scale([scaleFactor, scaleFactor, scaleFactor], dpSizeText)
+  dpSizeText = translate([-width /2 -dLength -gap*6 , 0 , 0], rotateZ(-Math.PI/2,dpSizeText))
 
   const dLine =[
     dLineWidth, 
     dLineDp, 
     widthSizeText,
-    dpSizeText
+    dpSizeText,
+    thkText3D
   ];
 
   return dLine;
@@ -283,8 +309,9 @@ const createDLine = (width, dp, thk) => {
 
 //원점표시
 const createOrigin = (width, dp, thk) => {
-  const originSphere = colorize([1,0,0],sphere({radius : 3, segment : options.segments}))
-  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 6, segment : options.segments}))
+  let scaleFactor = checkScale(width,dp);
+  const originSphere = colorize([1,0,0],sphere({radius : 3*scaleFactor, segment : options.segments}))
+  const originBigSphere = colorize([1,0,0,0.5],sphere({radius : 6*scaleFactor, segment : options.segments}))
   const origin = translate([-width/2, -dp/2, thk],[originSphere,originBigSphere])
   return origin
 }
@@ -516,7 +543,7 @@ const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, count
   const csf = union(head, hole);
   
   const gap = 30;
-  const minDist = 300;
+  const minDist = 600;
   const counterSinks =[];
   
   if(counterSinkAEn){
@@ -704,8 +731,8 @@ const main = ({
     });
   }
 
-  const sizeText3D = createSizeText(width, dp, thk);
-  const positionedText = translate([0, 0, thk], sizeText3D);
+  // const sizeText3D = createSizeText(width, dp, thk);
+  // const positionedText = translate([0, 0, thk], sizeText3D);
   const originM = createOrigin(width, dp, thk);
   const line = createLine(width, dp, thk);
   const dLine = createDLine(width,dp, thk);
@@ -728,7 +755,7 @@ const main = ({
     woodScene.push(originM)
   }
 
-  woodScene.push(colorize([0, 0, 0], positionedText));
+  // woodScene.push(colorize([0, 0, 0], positionedText));
   woodScene.push(colorize([0, 0, 0], line));
   woodScene.push(colorize([0, 0, 0], dLine));
 
