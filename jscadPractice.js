@@ -537,10 +537,10 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRa
 
 
 
-//피스타공 로직 수정2
+// 피스타공 로직
 const createCounterSinkInt = (width, dp) =>{
   const zeroLength = 300;
-  const maxLength = 600;
+  const maxLength = 500;
   const minDistConst = (maxLength-zeroLength)/2400;
   const gap = 30;
 
@@ -565,10 +565,11 @@ const createCounterSinkInt = (width, dp) =>{
   const numWidthMidScrews = numWidthScrews - 2;
   const widthInterval = usableWidthLength / (numWidthScrews -1);
 
-  return {widthInterval, dpInterval, numWidthMidScrews, numDpMidScrews, gap};
+  return {widthInterval, dpInterval, numWidthScrews, numWidthMidScrews, numDpScrews, numDpMidScrews, gap};
 
 }
 
+// 피스타공 그리기
 const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, counterSinkCEn) => {
   const head = translate([0, 0, thk-2],cylinder({ radius: 4, height: 4 }));
   const hole = translate([0, 0, (thk-4)/2],cylinder({ radius: 1.5, height: thk - 4 }));
@@ -624,12 +625,14 @@ const createCounterSinkText = (width, dp,thk) => {
   const {
     widthInterval,
     dpInterval,
+    numWidthScrews,
+    numDpScrews,
     gap
   } = createCounterSinkInt(width, dp);
 
   const intText =[];
   const scaleFactor = 1;
-  const counterSinkDpString = `${dpInterval.toFixed(1)}mm`
+  const counterSinkDpString = `${dpInterval.toFixed(1)}mm, ${numDpScrews}ea`
   if (counterSinkDpString.length === 0) {
     return []
   }
@@ -637,7 +640,7 @@ const createCounterSinkText = (width, dp,thk) => {
   dpIntervalText = scale([scaleFactor, scaleFactor, scaleFactor], dpIntervalText)
   dpIntervalText = translate([-width /2 + gap , 0 , thk], rotateZ(-Math.PI/2,dpIntervalText))
 
-  const counterSinkWidthString = `${widthInterval.toFixed(1)}mm`
+  const counterSinkWidthString = `${widthInterval.toFixed(1)}mm, ${numWidthScrews}ea`
   if (counterSinkWidthString.length === 0) {
     return []
   }
@@ -779,7 +782,7 @@ const main = ({
   const line = createLine(width, dp, thk);
   const dLine = createDLine(width,dp, thk);
   const grain = createGrain(width, dp, thk);
-  const counterSinkText = createCounterSinkText(width, dp, thk)
+  
 
 
 
@@ -803,7 +806,13 @@ const main = ({
   // woodScene.push(colorize([0, 0, 0], positionedText));
   woodScene.push(colorize([0, 0, 0], line));
   woodScene.push(colorize([0, 0, 0], dLine));
-  woodScene.push(colorize([0,0,0],counterSinkText))
+
+  // 피스타공 간격 가시화
+  // const counterSinkText = createCounterSinkText(width, dp, thk)
+  // if(counterSinkEn){
+  //   woodScene.push(colorize([0,0,0],counterSinkText))
+  // }
+
 
   if (grainEn) {
     if (dowelRodEn){
