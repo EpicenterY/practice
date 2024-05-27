@@ -268,6 +268,7 @@ const createDLine = (width, dp, thk) => {
   let scaleFactor = checkScale(width,dp)
   const gap = 4 * scaleFactor;
   const dLength = thk * scaleFactor;
+  
   const thkText = `${thk}mm`
   if (thkText.length === 0) {
     return []
@@ -536,77 +537,117 @@ const createFillet = (width, dp, thk, filletOption, cornerRoundEn, cornerRoundRa
 
 
 
-//피스타공 로직 수정
+//피스타공 로직 수정2
+const createCounterSinkInt = (width, dp) =>{
+  const zeroLength = 300;
+  const maxLength = 600;
+  const minDistConst = (maxLength-zeroLength)/2400;
+  const gap = 30;
+
+  const minDpDist = dp*minDistConst+zeroLength;
+  const totalDpLength = dp;
+  if (totalDpLength <= 2 * gap) {
+      throw new Error("Total length is too short to place screws with the given gap.");
+  }
+  const usableDpLength = totalDpLength - 2 * gap;
+  const numDpScrews = Math.floor(usableDpLength / minDpDist)+2;
+  const numDpMidScrews = numDpScrews - 2;
+  const dpInterval = usableDpLength / (numDpScrews -1);
+
+
+  const minWidthDist = width*minDistConst+zeroLength;
+  const totalWidthLength = width;
+  if (totalWidthLength <= 2 * gap) {
+      throw new Error("Total length is too short to place screws with the given gap.");
+  }
+  const usableWidthLength = totalWidthLength - 2 * gap;
+  const numWidthScrews = Math.floor(usableWidthLength / minWidthDist)+2;
+  const numWidthMidScrews = numWidthScrews - 2;
+  const widthInterval = usableWidthLength / (numWidthScrews -1);
+
+  return {widthInterval, dpInterval, numWidthMidScrews, numDpMidScrews, gap};
+
+}
+
 const createCounterSink = (width, dp, thk, counterSinkAEn, counterSinkBEn, counterSinkCEn) => {
   const head = translate([0, 0, thk-2],cylinder({ radius: 4, height: 4 }));
   const hole = translate([0, 0, (thk-4)/2],cylinder({ radius: 1.5, height: thk - 4 }));
   const csf = union(head, hole);
-  
-  const gap = 30;
-  const minDist = 600;
+
+  const {
+    widthInterval,
+    dpInterval,
+    numWidthMidScrews,
+    numDpMidScrews,
+    gap
+  } = createCounterSinkInt(width, dp);
+
   const counterSinks =[];
   
   if(counterSinkAEn){
-    const totalLength = dp;
-    if (totalLength <= 2 * gap) {
-        throw new Error("Total length is too short to place screws with the given gap.");
-    }
-    const usableLength = totalLength - 2 * gap;
-    const numScrews = Math.floor(usableLength / minDist)+2;
-    const numMidScrews = numScrews - 2;
-    const interval = usableLength / (numScrews -1);
-
     counterSinks.push(translate([-width/2 + thk/2, -dp/2 + gap , 0],csf));
     counterSinks.push(translate([ width/2 - thk/2, -dp/2 + gap , 0],csf));
     counterSinks.push(translate([-width/2 + thk/2, +dp/2 - gap , 0],csf));
     counterSinks.push(translate([ width/2 - thk/2, +dp/2 - gap , 0],csf));
   
-    for (let i = 0; i < numMidScrews; i++) {
-        position = gap + (i+1) * interval;
+    for (let i = 0; i < numDpMidScrews; i++) {
+        position = gap + (i+1) * dpInterval;
         counterSinks.push(translate([-width/2 + thk/2, -dp/2 + position , 0],csf));
         counterSinks.push(translate([ width/2 - thk/2, -dp/2 + position , 0],csf));
     }
   }
-
   if(counterSinkBEn){
-    const totalLength = width;
-    if (totalLength <= 2 * gap) {
-        throw new Error("Total length is too short to place screws with the given gap.");
-    }
-    const usableLength = totalLength - 2 * gap;
-    const numScrews = Math.floor(usableLength / minDist)+2;
-    const numMidScrews = numScrews - 2;
-    const interval = usableLength / (numScrews -1);
-
     counterSinks.push(translate([-width/2 +gap, dp/2 - thk/2 , 0],csf));
     counterSinks.push(translate([ width/2 -gap, dp/2 - thk/2 , 0],csf));
   
-    for (let i = 0; i < numMidScrews; i++) {
-        position = gap + (i+1) * interval;
+    for (let i = 0; i < numWidthMidScrews; i++) {
+        position = gap + (i+1) * widthInterval;
         counterSinks.push(translate([-width/2+position, dp/2 - thk/2 , 0],csf));
     }
   }
-
   if(counterSinkCEn){
-    const totalLength = width;
-    if (totalLength <= 2 * gap) {
-        throw new Error("Total length is too short to place screws with the given gap.");
-    }
-    const usableLength = totalLength - 2 * gap;
-    const numScrews = Math.floor(usableLength / minDist)+2;
-    const numMidScrews = numScrews - 2;
-    const interval = usableLength / (numScrews -1);
-
     counterSinks.push(translate([-width/2 +gap, -dp/2 + thk/2 , 0],csf));
     counterSinks.push(translate([ width/2 -gap, -dp/2 + thk/2 , 0],csf));
   
-    for (let i = 0; i < numMidScrews; i++) {
-        position = gap + (i+1) * interval;
+    for (let i = 0; i < numWidthMidScrews; i++) {
+        position = gap + (i+1) * widthInterval;
         counterSinks.push(translate([-width/2+position, -dp/2 + thk/2 , 0],csf));
     }
   }
 
   return counterSinks;
+}
+
+// 피스타공 치수 표시
+const createCounterSinkText = (width, dp,thk) => {
+
+  const {
+    widthInterval,
+    dpInterval,
+    gap
+  } = createCounterSinkInt(width, dp);
+
+  const intText =[];
+  const scaleFactor = 1;
+  const counterSinkDpString = `${dpInterval.toFixed(1)}mm`
+  if (counterSinkDpString.length === 0) {
+    return []
+  }
+  let dpIntervalText = text(counterSinkDpString.toString(), 2, 2)
+  dpIntervalText = scale([scaleFactor, scaleFactor, scaleFactor], dpIntervalText)
+  dpIntervalText = translate([-width /2 + gap , 0 , thk], rotateZ(-Math.PI/2,dpIntervalText))
+
+  const counterSinkWidthString = `${widthInterval.toFixed(1)}mm`
+  if (counterSinkWidthString.length === 0) {
+    return []
+  }
+  let widthIntervalText = text(counterSinkWidthString.toString(), 2, 2)
+  widthIntervalText = scale([scaleFactor, scaleFactor, scaleFactor], widthIntervalText)
+  widthIntervalText = translate([0 , -dp/2 + gap , thk], widthIntervalText)
+
+  intText.push(dpIntervalText, widthIntervalText)
+
+  return intText;
 }
 
 
@@ -628,7 +669,7 @@ const main = ({
   boringDist, boringEn, //씽크대보링
   filletOption, filletEn, //절단면라운딩
   counterSinkEn, counterSinkAEn, counterSinkBEn, counterSinkCEn, //피스타공
-  circleCutArray
+  dpInterval, widthInterval
 }) => {
   let base;
 
@@ -729,6 +770,7 @@ const main = ({
     counterSink.forEach((counterSinkItem) => {
       addFeature = union(addFeature,intersect(base,counterSinkItem));
     });
+
   }
 
   // const sizeText3D = createSizeText(width, dp, thk);
@@ -737,6 +779,9 @@ const main = ({
   const line = createLine(width, dp, thk);
   const dLine = createDLine(width,dp, thk);
   const grain = createGrain(width, dp, thk);
+  const counterSinkText = createCounterSinkText(width, dp, thk)
+
+
 
   const woodScene = [];
   const addScene =[];
@@ -758,6 +803,7 @@ const main = ({
   // woodScene.push(colorize([0, 0, 0], positionedText));
   woodScene.push(colorize([0, 0, 0], line));
   woodScene.push(colorize([0, 0, 0], dLine));
+  woodScene.push(colorize([0,0,0],counterSinkText))
 
   if (grainEn) {
     if (dowelRodEn){
