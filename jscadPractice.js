@@ -128,8 +128,6 @@ const createDowelRod = (width, dp) => {
 
 //결방향 표시
 const createGrain = (width, dp, thk) => {
-  const interval = 50;
-  const grainNum = Math.floor((dp / 2 - 10) / interval);
   
   const createCurve = (points)=>{
     const bezierCurve = bezier.create(points)
@@ -140,9 +138,9 @@ const createGrain = (width, dp, thk) => {
     const smoothPath = path2.fromPoints({ closed: false }, curvePoints)
     return smoothPath;
   }
-
   
-
+  
+  
   const points = [
     [-width / 2, 20 + Math.random() * 5],
     [-width / 4, Math.random() * 25],
@@ -156,28 +154,32 @@ const createGrain = (width, dp, thk) => {
     [-width / 2, -(20 + Math.random() * 5)],
     [-width / 2, -(20 + Math.random() * 5)]
   ]
-
+  
   const grains = [
     createCurve(points),
   ]
 
+
+  const interval = 50;
+  const grainNum = Math.floor((dp / 2 - 25) / interval);
+  
   for(let i = 1; i <= grainNum ; i++){
-    let intervals = i * interval * (1 - i / 50);
+    let intervals = i * interval * (1 - i / 200);
     const pointUppers =[
-      [-width / 2, intervals + 20/i + Math.random() * 30/i],
-      [-width / 4, intervals + Math.random() * 40/i],
-      [0, intervals + Math.random() * 30/i],
-      [ width / 4, intervals + Math.random() * 20/i],
-      [ width / 2, intervals + Math.random() * 10/i],
-      [ width / 2, intervals + Math.random() * 10/i]
+      [-width / 2, intervals + 10/i + Math.random() * 15/i],
+      [-width / 4, intervals + Math.random() * 20/i],
+      [0, intervals + Math.random() * 15/i],
+      [ width / 4, intervals + Math.random() * 10/i],
+      [ width / 2, intervals + Math.random() * 5/i],
+      [ width / 2, intervals + Math.random() * 5/i]
     ]
     const pointLowers =[
-      [ width / 2, -intervals - Math.random() * 10/i],
-      [ width / 4, -intervals -Math.random() * 20/i],
-      [0, -intervals -Math.random() * 30/i],
-      [-width / 4, -intervals -Math.random() * 40/i],
-      [-width / 2, -intervals -(20/i + Math.random() * 30/i)],
-      [-width / 2, -intervals -(20/i + Math.random() * 30/i)]
+      [ width / 2, -intervals - Math.random() * 5/i],
+      [ width / 4, -intervals -Math.random() * 10/i],
+      [0, -intervals -Math.random() * 15/i],
+      [-width / 4, -intervals -Math.random() * 20/i],
+      [-width / 2, -intervals -(10/i + Math.random() * 15/i)],
+      [-width / 2, -intervals -(10/i + Math.random() * 15/i)]
     ]
     grains.push(createCurve(pointUppers));
     grains.push(createCurve(pointLowers));
